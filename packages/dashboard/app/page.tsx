@@ -1,4 +1,8 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 interface Challenge {
   id: string;
@@ -8,21 +12,38 @@ interface Challenge {
   ends_at: string;
 }
 
-export const revalidate = 0;
+export default function Home() {
+  const searchParams = useSearchParams();
+  const adminToken = searchParams.get('admin') || '';
 
-export default async function Home() {
-  let challenges: Challenge[] = [];
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  try {
-    const response = await fetch(
-      'https://strava-challenges-extension.vercel.app/api/challenges/list-public'
-    );
-    if (response.ok) {
-      challenges = await response.json();
+  useEffect(() => {
+    async function loadChallenges() {
+      try {
+        const response = await fetch(
+          'https://strava-challenges-extension.vercel.app/api/challenges/list-public',
+          { cache: 'no-store' }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setChallenges(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch challenges:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-  } catch (error) {
-    console.error('Failed to fetch challenges:', error);
-  }
+
+    loadChallenges();
+  }, []);
+
+  const getChallengeLink = (slug: string) => {
+    const baseLink = `/c/${slug}`;
+    return adminToken ? `${baseLink}?admin=${adminToken}` : baseLink;
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
@@ -37,11 +58,11 @@ export default async function Home() {
         </div>
 
         <div className="grid gap-4">
-          {challenges && challenges.length > 0 ? (
+          {!loading && challenges && challenges.length > 0 ? (
             challenges.map((challenge) => (
               <Link
                 key={challenge.id}
-                href={`/c/${challenge.slug}`}
+                href={getChallengeLink(challenge.slug)}
                 className="block"
               >
                 <div className="bg-white rounded-lg border border-gray-200 p-6 hover:border-orange-500 hover:shadow-lg transition">
@@ -68,7 +89,9 @@ export default async function Home() {
             ))
           ) : (
             <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-              <p className="text-gray-500">No challenges yet</p>
+              <p className="text-gray-500">
+                {loading ? 'Loading challenges...' : 'No challenges yet'}
+              </p>
             </div>
           )}
         </div>
