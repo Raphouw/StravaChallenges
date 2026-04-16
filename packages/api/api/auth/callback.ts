@@ -134,9 +134,13 @@ export default async function handler(
     // 4. Generate JWT token for extension
     const jwtToken = generateJWT(userId, tokenData.athlete.id);
 
-    // 5. Redirect back with JWT token
+    // 5. Redirect back with JWT token and user data
+    const userName = `${tokenData.athlete.firstname} ${tokenData.athlete.lastname}`;
+    const userProfileUrl = tokenData.athlete.profile_medium;
+    const stravaId = tokenData.athlete.id;
+
     console.log('JWT généré:', jwtToken);
-    const redirectUrl = `https://strava-challenges-extension.vercel.app/auth-success?token=${encodeURIComponent(jwtToken)}&userId=${encodeURIComponent(userId)}`;
+    const redirectUrl = `https://strava-challenges-extension.vercel.app/auth-success?token=${encodeURIComponent(jwtToken)}&userId=${encodeURIComponent(userId)}&name=${encodeURIComponent(userName)}&profileUrl=${encodeURIComponent(userProfileUrl)}&stravaId=${encodeURIComponent(stravaId.toString())}`;
     console.log('Redirection vers:', redirectUrl);
 
     return res.redirect(redirectUrl);

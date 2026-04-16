@@ -13,13 +13,15 @@ export function Avatar({ src, alt, size = 'md' }: AvatarProps) {
     lg: 'w-16 h-16',
   };
 
+  const initials = alt ? alt.charAt(0).toUpperCase() : '?';
+
   return (
     <div className={`${sizeStyles[size]} rounded-full bg-gray-300 overflow-hidden flex items-center justify-center`}>
       {src ? (
-        <img src={src} alt={alt} className="w-full h-full object-cover" />
+        <img src={src} alt={alt || 'User'} className="w-full h-full object-cover" />
       ) : (
         <span className="text-gray-600 text-sm font-semibold">
-          {alt.charAt(0).toUpperCase()}
+          {initials}
         </span>
       )}
     </div>
