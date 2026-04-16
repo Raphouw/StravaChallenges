@@ -113,6 +113,14 @@ export default async function handler(
       return;
     }
 
+    // Trigger backfill if challenge starts in the past (fire and forget)
+    const now = new Date();
+    if (new Date(starts_at) < now) {
+      triggerBackfill(challenge.id, jwt).catch((err) => {
+        console.error('Backfill trigger failed:', err);
+      });
+    }
+
     res.status(201).json({
       id: challenge.id,
       invite_code,
@@ -124,5 +132,23 @@ export default async function handler(
   } catch (error) {
     console.error('Failed to create challenge:', error);
     res.status(401).json({ error: 'Invalid JWT token' });
+  }
+}
+
+async function triggerBackfill(challengeId: string, jwt: string): Promise<void> {
+  try {
+    await fetch(
+      `${process.env.API_URL || 'https://strava-challenges-extension.vercel.app'}/api/challenges/backfill`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ challengeId }),
+      }
+    );
+  } catch (error) {
+    console.error('Failed to trigger backfill:', error);
   }
 }
