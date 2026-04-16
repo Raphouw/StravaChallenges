@@ -24,23 +24,25 @@ export function useLeaderboard(challengeId: string | null, jwt: string | null) {
 
     async function fetchLeaderboard() {
       setLoading(true);
+      console.log('Fetching leaderboard for challenge:', challengeId);
       try {
-        const response = await fetch(
-          `https://strava-challenges-extension.vercel.app/api/challenges/${challengeId}/leaderboard`,
-          {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${jwt}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        const url = `https://strava-challenges-extension.vercel.app/api/challenges/leaderboard?id=${challengeId}`;
+        console.log('Leaderboard API URL:', url);
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${jwt}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
         if (!response.ok) {
           throw new Error(`Failed to fetch leaderboard: ${response.statusText}`);
         }
 
         const data = await response.json();
+        console.log('Leaderboard data received:', data);
         setEntries(data as LeaderboardEntry[]);
       } catch (err) {
         console.error('Failed to fetch leaderboard:', err);
