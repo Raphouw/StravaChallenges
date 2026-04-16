@@ -1,275 +1,85 @@
-'use client';
+'use client'
 
-import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import LeaderboardCard from '@/components/LeaderboardCard';
+import { useEffect, useState } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
-// Disable caching for real-time leaderboard updates
-export const revalidate = 0;
+function ChallengeDetail() {
+  const params = useParams()
+  const searchParams = useSearchParams()
+  const slug = params?.slug as string
+  const adminToken = searchParams?.get('admin')
+  const isAdmin = adminToken === '465786453sd4fsdfsdfsdf456'
 
-interface Challenge {
-  id: string;
-  name: string;
-  slug: string;
-  type: 'count' | 'time' | 'elevation';
-  starts_at: string;
-  ends_at: string;
-  invite_code: string;
-}
-
-interface LeaderboardEntry {
-  rank: number;
-  user_id: string;
-  user_name: string;
-  user_profile_pic: string;
-  effort_count: number;
-  total_distance: number;
-  total_elevation: number;
-  total_moving_time: number;
-  score: number;
-}
-
-interface PublicChallengeResponse {
-  id: string;
-  name: string;
-  slug: string;
-  type: string;
-  starts_at: string;
-  ends_at: string;
-  invite_code: string;
-  leaderboard: LeaderboardEntry[];
-  segment?: {
-    name: string;
-    distance: number;
-    elevation_gain: number;
-    strava_segment_id: number;
-  };
-}
-
-function ChallengeDetailWithParams({
-  slug,
-}: {
-  slug: string;
-}) {
-  const searchParams = useSearchParams();
-  const adminToken = searchParams.get('admin') || '';
-  const ADMIN_TOKEN = '465786453sd4fsdfsdfsdf456';
-
-  const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [segment, setSegment] = useState<PublicChallengeResponse['segment']>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const canDeleteChallenge =
-    slug.includes('test') ||
-    adminToken === ADMIN_TOKEN ||
-    (typeof window !== 'undefined' && localStorage.getItem('admin') === 'true');
-
-  const handleDelete = async () => {
-    if (!challenge || !window.confirm('Delete this challenge?')) return;
-
-    setIsDeleting(true);
-    try {
-      const authToken = adminToken === ADMIN_TOKEN ? adminToken : localStorage.getItem('strava_challenge_jwt') || '';
-      const response = await fetch(
-        'https://strava-challenges-extension.vercel.app/api/challenges/delete',
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ challengeId: challenge.id }),
-        }
-      );
-
-      if (response.ok) {
-        window.location.href = '/';
-      } else {
-        alert('Failed to delete challenge');
-      }
-    } catch (error) {
-      console.error('Delete failed:', error);
-      alert('Error deleting challenge');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function loadChallenge() {
-      try {
-        const apiUrl = `https://strava-challenges-extension.vercel.app/api/challenges/public?slug=${slug}`;
-        const response = await fetch(apiUrl, { cache: 'no-store' });
+    if (!slug) return
+    fetch(
+      `https://strava-challenges-extension.vercel.app/api/challenges/public?slug=${slug}`
+    )
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [slug])
 
-        if (!response.ok) {
-          console.error('API response not ok:', response.status, response.statusText);
-          setError('Challenge not found');
-          setLoading(false);
-          return;
-        }
+  if (loading) return <p style={{padding:'2rem'}}>Loading...</p>
+  if (!data?.name) return <p style={{padding:'2rem'}}>Challenge not found</p>
 
-        const data: PublicChallengeResponse = await response.json();
-        setChallenge({
-          id: data.id,
-          name: data.name,
-          slug: data.slug,
-          type: data.type as any,
-          starts_at: data.starts_at,
-          ends_at: data.ends_at,
-          invite_code: data.invite_code,
-        });
-        setLeaderboard(data.leaderboard);
-        setSegment(data.segment);
-        setLoading(false);
-      } catch (err) {
-        console.error('Failed to load challenge:', err, 'Slug:', slug);
-        setError('Failed to load challenge');
-        setLoading(false);
-      }
-    }
-
-    loadChallenge();
-  }, [slug]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading challenge...</p>
-      </div>
-    );
-  }
-
-  if (error || !challenge) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <p className="text-red-600 mb-4">{error || 'Challenge not found'}</p>
-        <Link href="/" className="text-orange-600 hover:text-orange-700">
-          ← Back to challenges
-        </Link>
-      </div>
-    );
-  }
-
-  const daysRemaining = Math.ceil(
-    (new Date(challenge.ends_at).getTime() - new Date().getTime()) /
-      (1000 * 60 * 60 * 24)
-  );
+  const challenge = data
+  const leaderboard = data.leaderboard || []
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <Link
-          href="/"
-          className="text-gray-600 hover:text-gray-900 mb-6 inline-block"
+    <div style={{maxWidth:'800px',margin:'0 auto',padding:'2rem',fontFamily:'sans-serif'}}>
+      <a href={`/?admin=${adminToken || ''}`} style={{color:'#FC4C02',textDecoration:'none'}}>← Back</a>
+      <h1>{challenge.name}</h1>
+      <p>{challenge.type} challenge · Ends {new Date(challenge.ends_at).toLocaleDateString()}</p>
+
+      {isAdmin && (
+        <button
+          onClick={async () => {
+            if (!confirm('Delete this challenge?')) return
+            await fetch(
+              'https://strava-challenges-extension.vercel.app/api/challenges/delete',
+              {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${adminToken}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ challengeId: challenge.id })
+              }
+            )
+            window.location.href = `/?admin=${adminToken}`
+          }}
+          style={{background:'red',color:'white',padding:'0.5rem 1rem',border:'none',borderRadius:'4px',cursor:'pointer',marginBottom:'1rem'}}
         >
-          ← Back to challenges
-        </Link>
+          🗑️ Delete Challenge
+        </button>
+      )}
 
-        <div className="bg-white rounded-lg border border-gray-200 p-8 mb-8">
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                {challenge.name}
-              </h1>
-              <div className="flex items-center gap-4 text-gray-600">
-                <span className="px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded">
-                  {challenge.type} challenge
-                </span>
-                <span>
-                  {daysRemaining > 0
-                    ? `${daysRemaining}d left`
-                    : 'Challenge ended'}
-                </span>
-              </div>
-            </div>
-            {canDeleteChallenge && (
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
-              >
-                {isDeleting ? '...' : '🗑️ Delete'}
-              </button>
-            )}
+      <h2>Leaderboard</h2>
+      {!leaderboard?.length ? (
+        <p>No efforts yet</p>
+      ) : (
+        leaderboard.map((entry: any, i: number) => (
+          <div key={entry.user_id} style={{display:'flex',alignItems:'center',gap:'1rem',padding:'0.75rem',marginBottom:'0.5rem',background:'#f9f9f9',borderRadius:'8px'}}>
+            <strong>#{i+1}</strong>
+            <img src={entry.user_profile_pic} width={40} height={40} style={{borderRadius:'50%'}} alt={entry.user_name} />
+            <span>{entry.user_name}</span>
+            <span style={{marginLeft:'auto'}}>{entry.score} {challenge.type === 'count' ? 'efforts' : ''}</span>
           </div>
-
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-gray-50 rounded p-4">
-              <p className="text-sm text-gray-600">Participants</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {leaderboard.length}
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded p-4">
-              <p className="text-sm text-gray-600">Status</p>
-              <p className="text-lg font-semibold text-gray-900">
-                {daysRemaining > 0 ? 'Active' : 'Ended'}
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded p-4">
-              <p className="text-sm text-gray-600">Invite Code</p>
-              <p className="text-lg font-mono font-semibold text-gray-900">
-                {challenge.invite_code}
-              </p>
-            </div>
-          </div>
-
-          {segment && (
-            <div className="bg-orange-50 border border-orange-200 rounded p-4">
-              <a
-                href={`https://www.strava.com/segments/${segment.strava_segment_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:opacity-80 transition"
-              >
-                <p className="text-xs font-semibold text-gray-700 mb-1">
-                  Segment
-                </p>
-                <p className="text-lg font-semibold text-orange-700 hover:underline">
-                  {segment.name}
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  {(segment.distance / 1000).toFixed(1)} km •{' '}
-                  {segment.elevation_gain}m D+
-                </p>
-              </a>
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Leaderboard
-          </h2>
-          <LeaderboardCard
-            entries={leaderboard}
-            challengeType={challenge.type}
-            currentUserId=""
-          />
-        </div>
-      </div>
-    </main>
-  );
+        ))
+      )}
+    </div>
+  )
 }
 
-export default function ChallengePage({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export default function Page() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <p className="text-gray-500">Loading challenge...</p>
-        </div>
-      }
-    >
-      <ChallengeDetailWithParams slug={params.slug} />
+    <Suspense fallback={<p>Loading...</p>}>
+      <ChallengeDetail />
     </Suspense>
-  );
+  )
 }
