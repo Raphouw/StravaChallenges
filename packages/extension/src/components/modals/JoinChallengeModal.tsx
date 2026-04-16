@@ -39,7 +39,20 @@ export function JoinChallengeModal({
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to join challenge');
+        const errorMsg = data.error || 'Failed to join challenge';
+
+        // Translate common error messages to French
+        if (errorMsg.includes('already a member') || errorMsg.includes('already exists')) {
+          throw new Error('Vous êtes déjà membre de ce challenge');
+        }
+        if (errorMsg.includes('not found')) {
+          throw new Error('Challenge introuvable');
+        }
+        if (errorMsg.includes('own challenge')) {
+          throw new Error('Vous ne pouvez pas rejoindre votre propre challenge');
+        }
+
+        throw new Error(errorMsg);
       }
 
       console.log('Joined challenge');
