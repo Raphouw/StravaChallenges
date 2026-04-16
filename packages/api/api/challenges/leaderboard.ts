@@ -32,7 +32,7 @@ export default async function handler(
 
   try {
     // Verify JWT
-    const payload = verifyJWT(jwt);
+    verifyJWT(jwt);
 
     // Get challenge ID from query
     const { id } = req.query;
@@ -53,8 +53,10 @@ export default async function handler(
       return;
     }
 
-    // Get all segment efforts for this challenge within the date range
-    const { data: efforts, error: effortsError } = await supabase
+    // Get all segment efforts for this challenge
+    // Filter dates only if challenge has specific date constraints
+    const now = new Date().toISOString();
+    let query = supabase
       .from('segment_efforts')
       .select(
         `
@@ -67,9 +69,19 @@ export default async function handler(
         start_date
       `
       )
-      .eq('challenge_id', challenge.id)
-      .gte('start_date', challenge.starts_at)
-      .lte('start_date', challenge.ends_at);
+      .eq('challenge_id', challenge.id);
+
+    // Filter efforts only after challenge start if it has started
+    if (challenge.starts_at) {
+      query = query.gte('start_date', challenge.starts_at);
+    }
+
+    // Filter efforts only before challenge end if it has ended
+    if (challenge.ends_at && challenge.ends_at < now) {
+      query = query.lte('start_date', challenge.ends_at);
+    }
+
+    const { data: efforts, error: effortsError } = await query;
 
     if (effortsError) {
       console.error('Failed to fetch efforts:', effortsError);
@@ -81,7 +93,8 @@ export default async function handler(
     const userIds = [...new Set((efforts || []).map((e) => e.user_id))];
 
     if (userIds.length === 0) {
-      return res.status(200).json([]);
+      res.status(200).json([]);
+      return;
     }
 
     const { data: users, error: usersError } = await supabase
