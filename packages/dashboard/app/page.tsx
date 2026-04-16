@@ -4,7 +4,7 @@ import Link from 'next/link';
 export default async function Home() {
   const { data: challenges } = await supabase
     .from('challenges')
-    .select('id, name, type, ends_at')
+    .select('id, slug, name, type, ends_at')
     .order('created_at', { ascending: false });
 
   return (
@@ -24,7 +24,7 @@ export default async function Home() {
             challenges.map((challenge) => (
               <Link
                 key={challenge.id}
-                href={`/c/${challenge.id}`}
+                href={`/c/${challenge.slug}`}
                 className="block"
               >
                 <div className="bg-white rounded-lg border border-gray-200 p-6 hover:border-orange-500 hover:shadow-lg transition">

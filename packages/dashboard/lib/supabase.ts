@@ -7,6 +7,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export interface Challenge {
   id: string;
+  slug: string;
   name: string;
   type: 'count' | 'time' | 'elevation';
   starts_at: string;
