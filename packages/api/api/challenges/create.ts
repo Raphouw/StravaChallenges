@@ -47,12 +47,20 @@ export default async function handler(
     // Generate short invite_code (6 random alphanumeric chars)
     const invite_code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
+    // Generate slug from name
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      + '-' + Math.random().toString(36).substring(2, 7);
+
     // Create challenge
     const { data: challenge, error: createError } = await supabase
       .from('challenges')
       .insert({
         name,
         type,
+        slug,
         invite_code,
         owner_id: payload.userId,
         starts_at,
