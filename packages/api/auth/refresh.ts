@@ -16,7 +16,8 @@ export default async function handler(
   const { jwt } = req.body;
 
   if (!jwt) {
-    return res.status(400).json({ error: 'Missing JWT token' });
+    res.status(400).json({ error: 'Missing JWT token' });
+    return;
   }
 
   try {
@@ -31,14 +32,16 @@ export default async function handler(
       .single();
 
     if (userError || !user) {
-      return res.status(401).json({ error: 'User not found' });
+      res.status(401).json({ error: 'User not found' });
+      return;
     }
 
     const userData = user as User;
 
     // 3. Check if token needs refresh
     if (!userData.token_expires_at) {
-      return res.status(500).json({ error: 'Missing token expiration info' });
+      res.status(500).json({ error: 'Missing token expiration info' });
+      return;
     }
 
     const expiresAt = new Date(userData.token_expires_at).getTime();
@@ -46,10 +49,11 @@ export default async function handler(
     // If token expires in more than 1 hour, return current access token
     if (expiresAt > Date.now() + 3600000) {
       const decryptedAccessToken = decryptToken(userData.access_token);
-      return res.status(200).json({
+      res.status(200).json({
         access_token: decryptedAccessToken,
         expires_in: Math.floor((expiresAt - Date.now()) / 1000),
       });
+      return;
     }
 
     // 4. Refresh token from Strava
@@ -73,7 +77,8 @@ export default async function handler(
 
       if (updateError) {
         console.error('Failed to update user tokens:', updateError);
-        return res.status(500).json({ error: 'Failed to update tokens' });
+        res.status(500).json({ error: 'Failed to update tokens' });
+        return;
       }
 
       // 6. Return new access token

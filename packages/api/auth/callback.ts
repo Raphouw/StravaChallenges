@@ -35,13 +35,15 @@ export default async function handler(
   // Handle Strava OAuth errors
   if (error) {
     const errorMessage = `${error}: ${error_description || 'Unknown error'}`;
-    return res.redirect(
+    res.redirect(
       `${APP_URL}/auth-error?message=${encodeURIComponent(errorMessage)}`
     );
+    return;
   }
 
   if (!code) {
-    return res.status(400).json({ error: 'Missing authorization code' });
+    res.status(400).json({ error: 'Missing authorization code' });
+    return;
   }
 
   try {
@@ -65,7 +67,8 @@ export default async function handler(
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json();
       console.error('Strava token exchange failed:', errorData);
-      return res.status(400).json({ error: 'Token exchange failed' });
+      res.status(400).json({ error: 'Token exchange failed' });
+      return;
     }
 
     const tokenData = (await tokenResponse.json()) as StravaTokenResponse;
@@ -98,7 +101,8 @@ export default async function handler(
 
       if (updateError) {
         console.error('Failed to update user:', updateError);
-        return res.status(500).json({ error: 'Failed to update user' });
+        res.status(500).json({ error: 'Failed to update user' });
+        return;
       }
 
       userId = existingUser.id;
@@ -121,7 +125,8 @@ export default async function handler(
 
       if (createError || !createdUser) {
         console.error('Failed to create user:', createError);
-        return res.status(500).json({ error: 'Failed to create user' });
+        res.status(500).json({ error: 'Failed to create user' });
+        return;
       }
 
       userId = createdUser.id;
