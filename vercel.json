@@ -1,6 +1,9 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" }
+    { "source": "/api/auth/:path*", "destination": "/api/auth" },
+    { "source": "/api/challenges/:path*", "destination": "/api/challenges" },
+    { "source": "/api/user/:path*", "destination": "/api/user" },
+    { "source": "/api/webhook/:path*", "destination": "/api/webhook" }
   ]
 }
