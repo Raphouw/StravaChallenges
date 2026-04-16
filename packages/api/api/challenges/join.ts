@@ -38,12 +38,18 @@ export default async function handler(
     // Find challenge by invite_code
     const { data: challenge, error: findError } = await supabase
       .from('challenges')
-      .select('id')
+      .select('id, owner_id')
       .eq('invite_code', challengeCode)
       .single();
 
     if (findError || !challenge) {
       res.status(404).json({ error: 'Challenge not found' });
+      return;
+    }
+
+    // Check if user is the owner
+    if (challenge.owner_id === payload.userId) {
+      res.status(400).json({ error: 'You cannot join your own challenge' });
       return;
     }
 

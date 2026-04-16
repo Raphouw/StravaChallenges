@@ -39,14 +39,7 @@ export function JoinChallengeModal({
 
       if (!response.ok) {
         const data = await response.json();
-        const errorMsg = data.error || 'Failed to join challenge';
-
-        // Handle specific error messages
-        if (errorMsg.includes('already exists') || errorMsg.includes('already a member')) {
-          throw new Error('You are already a member of this challenge');
-        }
-
-        throw new Error(errorMsg);
+        throw new Error(data.error || 'Failed to join challenge');
       }
 
       console.log('Joined challenge');
