@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, SegmentEffort, ChallengeSegment, User } from '../_utils/supabase';
-import { getStravaActivity, refreshStravaToken } from '../_utils/strava-client';
-import { decryptToken, encryptToken } from '../_utils/crypto';
+import { supabase, SegmentEffort, ChallengeSegment, User } from '../_utils/supabase.js';
+import { getStravaActivity, refreshStravaToken } from '../_utils/strava-client.js';
+import { decryptToken, encryptToken } from '../_utils/crypto.js';
 
 const WEBHOOK_VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN || '';
 

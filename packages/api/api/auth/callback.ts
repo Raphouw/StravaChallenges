@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, User } from '../_utils/supabase';
-import { encryptToken } from '../_utils/crypto';
-import { generateJWT } from '../_utils/jwt';
+import { supabase, User } from '../_utils/supabase.js';
+import { encryptToken } from '../_utils/crypto.js';
+import { generateJWT } from '../_utils/jwt.js';
 
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID || '';
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET || '';
