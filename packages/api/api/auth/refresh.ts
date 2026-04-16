@@ -1,8 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, User } from '../lib/supabase';
-import { verifyJWT } from '../lib/jwt';
-import { decryptToken, encryptToken } from '../lib/crypto';
-import { refreshStravaToken } from '../lib/strava';
+import { supabase, User } from '../../lib/supabase';
+import { verifyJWT } from '../../lib/jwt';
+import { decryptToken, encryptToken } from '../../lib/crypto';
+import { refreshStravaToken } from '../../lib/strava';
 
 export default async function handler(
   req: VercelRequest,
