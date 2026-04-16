@@ -3,7 +3,7 @@ import { supabase } from '../_utils/supabase.js';
 import { verifyJWT } from '../_utils/jwt.js';
 
 interface JoinChallengeBody {
-  code: string;
+  invite_code: string;
 }
 
 export default async function handler(
@@ -27,18 +27,18 @@ export default async function handler(
     // Verify JWT
     const payload = verifyJWT(jwt);
 
-    const { code } = req.body as JoinChallengeBody;
+    const { invite_code } = req.body as JoinChallengeBody;
 
-    if (!code) {
-      res.status(400).json({ error: 'Missing challenge code' });
+    if (!invite_code) {
+      res.status(400).json({ error: 'Missing challenge invite_code' });
       return;
     }
 
-    // Find challenge by code
+    // Find challenge by invite_code
     const { data: challenge, error: findError } = await supabase
       .from('challenges')
       .select('id')
-      .eq('code', code.toUpperCase())
+      .eq('invite_code', invite_code.toUpperCase())
       .single();
 
     if (findError || !challenge) {

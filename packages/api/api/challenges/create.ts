@@ -44,8 +44,8 @@ export default async function handler(
       return;
     }
 
-    // Generate short code (6 random alphanumeric chars)
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Generate short invite_code (6 random alphanumeric chars)
+    const invite_code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     // Create challenge
     const { data: challenge, error: createError } = await supabase
@@ -53,7 +53,7 @@ export default async function handler(
       .insert({
         name,
         type,
-        code,
+        invite_code,
         created_by: payload.userId,
         starts_at,
         ends_at,
@@ -97,7 +97,7 @@ export default async function handler(
 
     res.status(201).json({
       id: challenge.id,
-      code,
+      invite_code,
       name,
       type,
       starts_at,
