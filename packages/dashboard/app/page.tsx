@@ -1,11 +1,26 @@
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
+interface Challenge {
+  id: string;
+  slug: string;
+  name: string;
+  type: string;
+  ends_at: string;
+}
+
 export default async function Home() {
-  const { data: challenges } = await supabase
-    .from('challenges')
-    .select('id, slug, name, type, ends_at')
-    .order('created_at', { ascending: false });
+  let challenges: Challenge[] = [];
+
+  try {
+    const response = await fetch(
+      'https://strava-challenges-extension.vercel.app/api/challenges/list-public'
+    );
+    if (response.ok) {
+      challenges = await response.json();
+    }
+  } catch (error) {
+    console.error('Failed to fetch challenges:', error);
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
