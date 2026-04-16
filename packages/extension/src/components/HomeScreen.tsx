@@ -1,34 +1,52 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Challenge } from '@/types/index.js';
 import { Button, Card, Avatar } from './shared/index.js';
+import { useAuth } from '@/hooks/useAuth.js';
+import { useUserProfile } from '@/hooks/useUserProfile.js';
 
 interface HomeScreenProps {
-  user: User;
+  user: User | null;
   challenges: Challenge[];
   loading?: boolean;
   onLogout: () => void;
 }
 
 export function HomeScreen({
-  user,
+  user: initialUser,
   challenges,
   loading = false,
   onLogout,
 }: HomeScreenProps) {
+  const auth = useAuth();
+  const { user: profileUser, loading: profileLoading } = useUserProfile(auth.jwt);
+  const user = profileUser || initialUser;
   return (
     <div className="w-full h-full flex flex-col bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Avatar
-              src={user.profile_pic_url}
-              alt={user.name}
-              size="md"
-            />
-            <div className="text-left">
-              <h2 className="font-semibold text-gray-900">{user.name}</h2>
-              <p className="text-xs text-gray-500">Strava ID: {user.strava_id}</p>
+            {profileLoading ? (
+              <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse" />
+            ) : (
+              <Avatar
+                src={user?.profile_pic_url}
+                alt={user?.name || 'User'}
+                size="md"
+              />
+            )}
+            <div className="text-left flex-1">
+              {profileLoading ? (
+                <>
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-2" />
+                  <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
+                </>
+              ) : (
+                <>
+                  <h2 className="font-semibold text-gray-900 truncate">{user?.name || 'Unknown User'}</h2>
+                  <p className="text-xs text-gray-500">Strava #{user?.strava_id || '-'}</p>
+                </>
+              )}
             </div>
           </div>
           <Button
