@@ -5,6 +5,15 @@ import { verifyJWT } from '../_utils/jwt.js';
 const ADMIN_TOKEN = '465786453sd4fsdfsdfsdf456';
 
 export default async function handleDelete(req: VercelRequest, res: VercelResponse): Promise<void> {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== 'DELETE') {
     res.status(405).end();
     return;
