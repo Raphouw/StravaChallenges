@@ -1,19 +1,13 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, User } from './_utils/supabase.js';
-import { verifyJWT } from './_utils/jwt.js';
+import { supabase } from '../_utils/supabase.js';
+import { verifyJWT } from '../_utils/jwt.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const pathParam = typeof req.query.__path === 'string' ? req.query.__path : Array.isArray(req.query.__path) ? req.query.__path[0] : '';
-  const path = `/${pathParam}`;
-
-  if (path === '/me' && req.method === 'GET') {
-    return handleMe(req, res);
+  if (req.method !== 'GET') {
+    res.status(405).end();
+    return;
   }
 
-  res.status(404).json({ error: 'Not found' });
-}
-
-async function handleMe(req: VercelRequest, res: VercelResponse): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Missing or invalid Authorization header' });

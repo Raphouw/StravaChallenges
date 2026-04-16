@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, SegmentEffort, ChallengeSegment, User } from './_utils/supabase.js';
-import { getStravaActivity, refreshStravaToken } from './_utils/strava-client.js';
-import { decryptToken, encryptToken } from './_utils/crypto.js';
+import { supabase, SegmentEffort, User } from '../_utils/supabase.js';
+import { getStravaActivity, refreshStravaToken } from '../_utils/strava-client.js';
+import { decryptToken, encryptToken } from '../_utils/crypto.js';
 
 const WEBHOOK_VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN || '';
 
@@ -14,18 +14,7 @@ interface WebhookBody {
   event_time: number;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const pathParam = typeof req.query.__path === 'string' ? req.query.__path : Array.isArray(req.query.__path) ? req.query.__path[0] : '';
-  const path = `/${pathParam}`;
-
-  if (path === '/strava') {
-    return handleStrava(req, res);
-  }
-
-  res.status(404).json({ error: 'Not found' });
-}
-
-async function handleStrava(req: VercelRequest, res: VercelResponse): Promise<void> {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   // Handle Strava webhook verification (GET request)
   if (req.method === 'GET') {
     const { 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
