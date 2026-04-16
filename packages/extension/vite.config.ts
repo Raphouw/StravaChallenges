@@ -2,12 +2,47 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __dirname = resolve(fileURLToPath(import.meta.url), '..');
+
+const postBuildPlugin = {
+  name: 'post-build',
+  writeBundle() {
+    const publicDir = resolve(__dirname, 'public');
+    const distDir = resolve(__dirname, 'dist');
+
+    // Copy manifest.json
+    fs.copyFileSync(resolve(publicDir, 'manifest.json'), resolve(distDir, 'manifest.json'));
+
+    // Move src/popup.html to root
+    const srcPopup = resolve(distDir, 'src/popup.html');
+    if (fs.existsSync(srcPopup)) {
+      fs.copyFileSync(srcPopup, resolve(distDir, 'popup.html'));
+    }
+
+    // Copy icons
+    fs.cpSync(resolve(publicDir, 'icons'), resolve(distDir, 'icons'), { recursive: true, force: true });
+
+    // Copy auth-success.html
+    fs.copyFileSync(resolve(publicDir, 'pages/auth-success.html'), resolve(distDir, 'auth-success.html'));
+
+    // Remove src and pages folders
+    if (fs.existsSync(resolve(distDir, 'src'))) {
+      fs.rmSync(resolve(distDir, 'src'), { recursive: true });
+    }
+    if (fs.existsSync(resolve(distDir, 'pages'))) {
+      fs.rmSync(resolve(distDir, 'pages'), { recursive: true });
+    }
+  },
+};
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), postBuildPlugin],
   build: {
     outDir: 'dist',
     minify: 'terser',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'src/popup.html'),
@@ -25,32 +60,3 @@ export default defineConfig({
     },
   },
 });
-
-// Copy manifest.json and public files to dist after build
-const copyFilesPlugin = {
-  name: 'copy-files',
-  writeBundle() {
-    const publicDir = resolve(__dirname, 'public');
-    const distDir = resolve(__dirname, 'dist');
-
-    // Copy manifest.json
-    const manifest = fs.readFileSync(resolve(publicDir, 'manifest.json'), 'utf-8');
-    fs.writeFileSync(resolve(distDir, 'manifest.json'), manifest);
-
-    // Copy icons
-    const iconsDir = resolve(publicDir, 'icons');
-    if (fs.existsSync(iconsDir)) {
-      const iconsDist = resolve(distDir, 'icons');
-      if (!fs.existsSync(iconsDist)) fs.mkdirSync(iconsDist);
-      fs.readdirSync(iconsDir).forEach((file) => {
-        fs.copyFileSync(resolve(iconsDir, file), resolve(iconsDist, file));
-      });
-    }
-
-    // Copy auth-success.html
-    const authSuccess = resolve(publicDir, 'pages', 'auth-success.html');
-    if (fs.existsSync(authSuccess)) {
-      fs.copyFileSync(authSuccess, resolve(distDir, 'auth-success.html'));
-    }
-  },
-};
