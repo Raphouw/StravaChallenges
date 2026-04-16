@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import LeaderboardCard from '@/components/LeaderboardCard';
@@ -47,10 +47,10 @@ interface PublicChallengeResponse {
   };
 }
 
-export default function ChallengePage({
-  params,
+function ChallengeDetailWithParams({
+  slug,
 }: {
-  params: { slug: string };
+  slug: string;
 }) {
   const searchParams = useSearchParams();
   const adminToken = searchParams.get('admin') || '';
@@ -64,7 +64,7 @@ export default function ChallengePage({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const canDeleteChallenge =
-    params.slug.includes('test') ||
+    slug.includes('test') ||
     adminToken === ADMIN_TOKEN ||
     (typeof window !== 'undefined' && localStorage.getItem('admin') === 'true');
 
@@ -102,7 +102,7 @@ export default function ChallengePage({
   useEffect(() => {
     async function loadChallenge() {
       try {
-        const apiUrl = `https://strava-challenges-extension.vercel.app/api/challenges/public?slug=${params.slug}`;
+        const apiUrl = `https://strava-challenges-extension.vercel.app/api/challenges/public?slug=${slug}`;
         const response = await fetch(apiUrl, { cache: 'no-store' });
 
         if (!response.ok) {
@@ -126,14 +126,14 @@ export default function ChallengePage({
         setSegment(data.segment);
         setLoading(false);
       } catch (err) {
-        console.error('Failed to load challenge:', err, 'Slug:', params.slug);
+        console.error('Failed to load challenge:', err, 'Slug:', slug);
         setError('Failed to load challenge');
         setLoading(false);
       }
     }
 
     loadChallenge();
-  }, [params.slug]);
+  }, [slug]);
 
   if (loading) {
     return (
@@ -253,5 +253,23 @@ export default function ChallengePage({
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ChallengePage({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <p className="text-gray-500">Loading challenge...</p>
+        </div>
+      }
+    >
+      <ChallengeDetailWithParams slug={params.slug} />
+    </Suspense>
   );
 }
