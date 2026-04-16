@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Card } from '../shared/index.js';
+import { SuccessModal } from './SuccessModal.js';
 
 interface CreateChallengeModalProps {
   isOpen: boolean;
@@ -21,8 +22,34 @@ export function CreateChallengeModal({
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+
+  const handleSuccessClose = () => {
+    setShowSuccess(false);
+    setName('');
+    setType('count');
+    setSegmentId('');
+    setStartDate('');
+    setEndDate('');
+    setError(null);
+    onSuccess();
+    onClose();
+  };
 
   if (!isOpen) return null;
+
+  if (showSuccess) {
+    return (
+      <SuccessModal
+        isOpen={showSuccess}
+        title="Challenge Created!"
+        message="Your challenge has been created successfully. Share the code with your friends!"
+        code={inviteCode}
+        onClose={handleSuccessClose}
+      />
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,8 +79,8 @@ export function CreateChallengeModal({
 
       const data = await response.json();
       console.log('Challenge created:', data);
-      onSuccess();
-      onClose();
+      setInviteCode(data.invite_code);
+      setShowSuccess(true);
     } catch (err) {
       console.error('Failed to create challenge:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');

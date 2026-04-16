@@ -4,6 +4,7 @@ import { Button, Card, Avatar } from './shared/index.js';
 import { CreateChallengeModal, JoinChallengeModal } from './modals/index.js';
 import { useAuth } from '@/hooks/useAuth.js';
 import { useUserProfile } from '@/hooks/useUserProfile.js';
+import { useChallengesList } from '@/hooks/useChallengesList.js';
 
 interface HomeScreenProps {
   user: User | null;
@@ -14,8 +15,8 @@ interface HomeScreenProps {
 
 export function HomeScreen({
   user: initialUser,
-  challenges,
-  loading = false,
+  challenges: _,
+  loading: __ ,
   onLogout,
 }: HomeScreenProps) {
   const auth = useAuth();
@@ -25,6 +26,8 @@ export function HomeScreen({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const { challenges, loading } = useChallengesList(auth.jwt, refreshKey);
   return (
     <div className="w-full h-full flex flex-col bg-gray-50">
       {/* Header */}
