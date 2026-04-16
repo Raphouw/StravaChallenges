@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { User, Challenge } from '@/types/index.js';
 import { Button, Card, Avatar } from './shared/index.js';
+import { CreateChallengeModal, JoinChallengeModal } from './modals/index.js';
 import { useAuth } from '@/hooks/useAuth.js';
 import { useUserProfile } from '@/hooks/useUserProfile.js';
 
@@ -20,6 +21,10 @@ export function HomeScreen({
   const auth = useAuth();
   const { user: profileUser, loading: profileLoading } = useUserProfile(auth.jwt);
   const user = profileUser || initialUser;
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   return (
     <div className="w-full h-full flex flex-col bg-gray-50">
       {/* Header */}
@@ -73,9 +78,21 @@ export function HomeScreen({
           ) : challenges.length === 0 ? (
             <Card className="text-center py-8">
               <p className="text-gray-500 mb-4">No active challenges yet</p>
-              <Button size="sm" className="mx-auto">
-                Create Challenge
-              </Button>
+              <div className="flex gap-2 justify-center">
+                <Button
+                  size="sm"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  Create
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setShowJoinModal(true)}
+                >
+                  Join
+                </Button>
+              </div>
             </Card>
           ) : (
             <div className="space-y-3">
@@ -93,7 +110,11 @@ export function HomeScreen({
                         Until {new Date(challenge.ends_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <Button variant="primary" size="sm">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setShowJoinModal(true)}
+                    >
                       Join
                     </Button>
                   </div>
@@ -105,11 +126,43 @@ export function HomeScreen({
       </div>
 
       {/* Footer */}
-      <div className="bg-white border-t border-gray-200 p-4">
-        <Button className="w-full" variant="secondary">
-          Create New Challenge
+      <div className="bg-white border-t border-gray-200 p-4 flex gap-2">
+        <Button
+          className="flex-1"
+          onClick={() => setShowCreateModal(true)}
+        >
+          Create Challenge
+        </Button>
+        <Button
+          className="flex-1"
+          variant="secondary"
+          onClick={() => setShowJoinModal(true)}
+        >
+          Join Challenge
         </Button>
       </div>
+
+      {/* Modals */}
+      {auth.jwt && (
+        <>
+          <CreateChallengeModal
+            isOpen={showCreateModal}
+            jwt={auth.jwt}
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={() => {
+              setRefreshKey((prev) => prev + 1);
+            }}
+          />
+          <JoinChallengeModal
+            isOpen={showJoinModal}
+            jwt={auth.jwt}
+            onClose={() => setShowJoinModal(false)}
+            onSuccess={() => {
+              setRefreshKey((prev) => prev + 1);
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }
