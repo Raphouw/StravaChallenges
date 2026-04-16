@@ -1,6 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase, Challenge } from '../_utils/supabase.js';
+import { supabase, Challenge, User } from '../_utils/supabase.js';
 import { verifyJWT } from '../_utils/jwt.js';
+import { decryptToken, encryptToken } from '../_utils/crypto.js';
+import { refreshStravaToken } from '../_utils/strava-client.js';
 
 interface CreateChallengeBody {
   name: string;
@@ -84,12 +86,80 @@ export default async function handler(
       return;
     }
 
-    // Add segment to challenge
+    // Get user to access Strava token
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', payload.userId)
+      .single();
+
+    if (userError || !user) {
+      console.error('Failed to fetch user:', userError);
+      res.status(500).json({ error: 'Failed to fetch user data' });
+      return;
+    }
+
+    // Fetch segment details from Strava
+    let segmentName = '';
+    let segmentDistance = 0;
+    let segmentElevation = 0;
+
+    try {
+      const userData = user as User;
+      let accessToken = userData.access_token;
+
+      // Check if token needs refresh
+      if (userData.token_expires_at) {
+        const expiresAt = new Date(userData.token_expires_at).getTime();
+        if (expiresAt <= Date.now()) {
+          const decrypted = decryptToken(userData.refresh_token);
+          const newTokens = await refreshStravaToken(decrypted);
+          accessToken = encryptToken(newTokens.access_token);
+
+          // Update user with new token
+          await supabase
+            .from('users')
+            .update({
+              access_token: accessToken,
+              refresh_token: encryptToken(newTokens.refresh_token),
+              token_expires_at: new Date(
+                newTokens.expires_at * 1000
+              ).toISOString(),
+            })
+            .eq('id', payload.userId);
+        }
+      }
+
+      const decryptedToken = decryptToken(accessToken);
+      const segmentResponse = await fetch(
+        `https://www.strava.com/api/v3/segments/${segment_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${decryptedToken}`,
+          },
+        }
+      );
+
+      if (segmentResponse.ok) {
+        const segmentData = await segmentResponse.json();
+        segmentName = segmentData.name || '';
+        segmentDistance = segmentData.distance || 0;
+        segmentElevation = segmentData.elevation_gain || 0;
+      }
+    } catch (error) {
+      console.error('Failed to fetch segment details from Strava:', error);
+      // Continue anyway with empty values
+    }
+
+    // Add segment to challenge with details
     const { error: segmentError } = await supabase
       .from('challenge_segments')
       .insert({
         challenge_id: challenge.id,
         strava_segment_id: segment_id,
+        segment_name: segmentName,
+        distance: segmentDistance,
+        elevation_gain: segmentElevation,
       });
 
     if (segmentError) {

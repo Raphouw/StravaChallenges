@@ -8,6 +8,8 @@ interface Challenge {
   ends_at: string;
 }
 
+export const revalidate = 0;
+
 export default async function Home() {
   let challenges: Challenge[] = [];
 

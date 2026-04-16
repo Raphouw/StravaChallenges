@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import LeaderboardCard from '@/components/LeaderboardCard';
 
+// Disable caching for real-time leaderboard updates
+export const revalidate = 0;
+
 interface Challenge {
   id: string;
   name: string;
