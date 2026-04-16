@@ -23,5 +23,11 @@ export default async function handler(
 
   const stravaAuthUrl = `https://www.strava.com/oauth/authorize?${params.toString()}`;
 
-  res.redirect(stravaAuthUrl);
+  // Debug: return URL instead of redirecting
+  res.json({
+    redirect_url: stravaAuthUrl,
+    client_id: STRAVA_CLIENT_ID,
+    redirect_uri: redirectUri,
+    app_url: APP_URL,
+  });
 }
