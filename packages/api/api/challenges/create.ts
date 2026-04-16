@@ -54,7 +54,7 @@ export default async function handler(
         name,
         type,
         invite_code,
-        created_by: payload.userId,
+        owner_id: payload.userId,
         starts_at,
         ends_at,
       })
