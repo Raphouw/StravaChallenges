@@ -5,6 +5,7 @@ import { verifyJWT } from '../_utils/jwt.js';
 interface ChallengeWithMemberCount extends Challenge {
   member_count: number;
   is_owner: boolean;
+  is_member: boolean;
 }
 
 export default async function handler(
@@ -103,11 +104,16 @@ export default async function handler(
 
     // Format response
     const challengesWithCounts: ChallengeWithMemberCount[] = uniqueChallenges.map(
-      (challenge) => ({
-        ...challenge,
-        member_count: memberCountMap.get(challenge.id) || 0,
-        is_owner: challenge.owner_id === payload.userId,
-      })
+      (challenge) => {
+        const isOwner = challenge.owner_id === payload.userId;
+        const isMember = memberChallengeIds.includes(challenge.id);
+        return {
+          ...challenge,
+          member_count: memberCountMap.get(challenge.id) || 0,
+          is_owner: isOwner,
+          is_member: isOwner || isMember,
+        };
+      }
     );
 
     res.status(200).json(challengesWithCounts);

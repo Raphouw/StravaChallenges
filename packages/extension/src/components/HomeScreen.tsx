@@ -101,6 +101,7 @@ export function HomeScreen({
             <div className="space-y-3">
               {challenges.map((challenge) => {
                 const isOwner = (challenge as any).is_owner;
+                const isMember = (challenge as any).is_member;
                 return (
                   <Card key={challenge.id}>
                     <div className="flex items-start justify-between">
@@ -137,7 +138,7 @@ export function HomeScreen({
                           </div>
                         )}
                       </div>
-                      {!isOwner && (
+                      {!isMember && (
                         <Button
                           variant="primary"
                           size="sm"
