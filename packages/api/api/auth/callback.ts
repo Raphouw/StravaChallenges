@@ -143,6 +143,9 @@ export default async function handler(
     res.redirect(redirectUrl.toString());
   } catch (error) {
     console.error('OAuth callback error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 }
