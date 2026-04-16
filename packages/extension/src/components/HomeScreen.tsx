@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { User, Challenge } from '@/types/index.js';
 import { Button, Card, Avatar } from './shared/index.js';
+import { LeaderboardCard } from './LeaderboardCard.js';
 import { CreateChallengeModal, JoinChallengeModal } from './modals/index.js';
 import { useAuth } from '@/hooks/useAuth.js';
 import { useUserProfile } from '@/hooks/useUserProfile.js';
 import { useChallengesList } from '@/hooks/useChallengesList.js';
+import { useLeaderboard } from '@/hooks/useLeaderboard.js';
 
 interface HomeScreenProps {
   user: User | null;
@@ -102,51 +104,66 @@ export function HomeScreen({
               {challenges.map((challenge) => {
                 const isOwner = (challenge as any).is_owner;
                 const isMember = (challenge as any).is_member;
+                const { entries: leaderboardEntries, loading: leaderboardLoading } = useLeaderboard(challenge.id, auth.jwt);
+
                 return (
                   <Card key={challenge.id}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-gray-900">
-                            {challenge.name}
-                          </h4>
-                          {isOwner && (
-                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">
-                              Owner
-                            </span>
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-gray-900">
+                              {challenge.name}
+                            </h4>
+                            {isOwner && (
+                              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">
+                                Owner
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {challenge.type} challenge
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Until {new Date(challenge.ends_at).toLocaleDateString()}
+                          </p>
+                          {isOwner && challenge.invite_code && (
+                            <div className="mt-2 p-2 bg-gray-50 rounded flex items-center justify-between">
+                              <span className="text-xs text-gray-600">
+                                Code: <span className="font-mono font-semibold">{challenge.invite_code}</span>
+                              </span>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(challenge.invite_code || '');
+                                }}
+                                className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+                              >
+                                Copy
+                              </button>
+                            </div>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {challenge.type} challenge
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Until {new Date(challenge.ends_at).toLocaleDateString()}
-                        </p>
-                        {isOwner && challenge.invite_code && (
-                          <div className="mt-2 p-2 bg-gray-50 rounded flex items-center justify-between">
-                            <span className="text-xs text-gray-600">
-                              Code: <span className="font-mono font-semibold">{challenge.invite_code}</span>
-                            </span>
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(challenge.invite_code || '');
-                              }}
-                              className="text-xs text-orange-600 hover:text-orange-700 font-medium"
-                            >
-                              Copy
-                            </button>
-                          </div>
+                        {!isMember && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setShowJoinModal(true)}
+                          >
+                            Join
+                          </Button>
                         )}
                       </div>
-                      {!isMember && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => setShowJoinModal(true)}
-                        >
-                          Join
-                        </Button>
-                      )}
+
+                      {/* Leaderboard */}
+                      <div className="pt-2 border-t border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Leaderboard</p>
+                        <LeaderboardCard
+                          entries={leaderboardEntries}
+                          loading={leaderboardLoading}
+                          challengeType={challenge.type}
+                          currentUserId={user?.id || ''}
+                        />
+                      </div>
                     </div>
                   </Card>
                 );
