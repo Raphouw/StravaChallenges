@@ -59,7 +59,7 @@ async function handleStrava(
   });
 
   const stravaAuthUrl = `https://www.strava.com/oauth/authorize?${params.toString()}`;
-  return res.redirect(stravaAuthUrl);
+  res.redirect(stravaAuthUrl);
 }
 
 async function handleCallback(
@@ -70,9 +70,10 @@ async function handleCallback(
 
   if (error) {
     const errorMessage = `${error}: ${error_description || 'Unknown error'}`;
-    return res.redirect(
+    res.redirect(
       `https://strava-challenges-extension.vercel.app/auth-error?message=${encodeURIComponent(errorMessage)}`
     );
+    return;
   }
 
   if (!code) {
@@ -155,7 +156,7 @@ async function handleCallback(
     const userName = `${tokenData.athlete.firstname} ${tokenData.athlete.lastname}`;
     const redirectUrl = `https://strava-challenges-extension.vercel.app/auth-success?token=${encodeURIComponent(jwtToken)}&userId=${encodeURIComponent(userId)}&name=${encodeURIComponent(userName)}&profileUrl=${encodeURIComponent(tokenData.athlete.profile_medium)}&stravaId=${encodeURIComponent(tokenData.athlete.id.toString())}`;
 
-    return res.redirect(redirectUrl);
+    res.redirect(redirectUrl);
   } catch (error) {
     console.error('OAuth callback error:', error);
     res.status(500).json({ error: 'Internal server error' });
