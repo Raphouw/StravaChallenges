@@ -54,7 +54,6 @@ export default async function handler(
     }
 
     // Get all segment efforts for this challenge
-    // Filter dates only if challenge has specific date constraints
     const now = new Date().toISOString();
     let query = supabase
       .from('segment_efforts')
@@ -71,12 +70,7 @@ export default async function handler(
       )
       .eq('challenge_id', challenge.id);
 
-    // Filter efforts only after challenge start if it has started
-    if (challenge.starts_at) {
-      query = query.gte('start_date', challenge.starts_at);
-    }
-
-    // Filter efforts only before challenge end if it has ended
+    // Only filter by end date if challenge has already ended
     if (challenge.ends_at && challenge.ends_at < now) {
       query = query.lte('start_date', challenge.ends_at);
     }
