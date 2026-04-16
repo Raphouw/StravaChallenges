@@ -6,7 +6,6 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "vercel dev",
-    "build": "mkdir -p public",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
