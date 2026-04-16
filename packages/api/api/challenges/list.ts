@@ -28,19 +28,7 @@ export default async function handler(
     // Verify JWT
     const payload = verifyJWT(jwt);
 
-    // Get challenges where user is owner
-    const { data: ownedChallenges, error: ownedError } = await supabase
-      .from('challenges')
-      .select('*')
-      .eq('owner_id', payload.userId);
-
-    if (ownedError) {
-      console.error('Failed to fetch owned challenges:', ownedError);
-      res.status(500).json({ error: 'Failed to fetch challenges' });
-      return;
-    }
-
-    // Get challenges where user is a member
+    // Get challenge IDs where user is a member (including owned challenges)
     const { data: membershipData, error: membershipError } = await supabase
       .from('challenge_members')
       .select('challenge_id')
@@ -54,32 +42,41 @@ export default async function handler(
 
     const memberChallengeIds = membershipData?.map((m) => m.challenge_id) || [];
 
-    // Get all challenges where user is a member (but not owner)
-    let joinedChallenges: any[] = [];
-    if (memberChallengeIds.length > 0) {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .in('id', memberChallengeIds)
-        .neq('owner_id', payload.userId);
+    // Get all challenge IDs (owned or member)
+    const { data: ownedChallenges, error: ownedError } = await supabase
+      .from('challenges')
+      .select('id')
+      .eq('owner_id', payload.userId);
 
-      if (error) {
-        console.error('Failed to fetch joined challenges:', error);
-        res.status(500).json({ error: 'Failed to fetch challenges' });
-        return;
-      }
-
-      joinedChallenges = data || [];
+    if (ownedError) {
+      console.error('Failed to fetch owned challenges:', ownedError);
+      res.status(500).json({ error: 'Failed to fetch challenges' });
+      return;
     }
 
-    // Combine and deduplicate
-    const allChallenges = [
-      ...(ownedChallenges || []),
-      ...joinedChallenges,
-    ];
-    const uniqueChallenges = Array.from(
-      new Map(allChallenges.map((c) => [c.id, c])).values()
-    );
+    const ownedChallengeIds = ownedChallenges?.map((c) => c.id) || [];
+
+    // Combine and deduplicate challenge IDs
+    const allChallengeIds = Array.from(new Set([
+      ...memberChallengeIds,
+      ...ownedChallengeIds,
+    ]));
+
+    if (allChallengeIds.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // Get all challenges by their IDs
+    const { data: uniqueChallenges, error: challengesError } = await supabase
+      .from('challenges')
+      .select('*')
+      .in('id', allChallengeIds);
+
+    if (challengesError || !uniqueChallenges) {
+      console.error('Failed to fetch challenges:', challengesError);
+      res.status(500).json({ error: 'Failed to fetch challenges' });
+      return;
+    }
 
     // Get member counts for all challenges
     const { data: memberCounts, error: countError } = await supabase
@@ -87,7 +84,7 @@ export default async function handler(
       .select('challenge_id')
       .in(
         'challenge_id',
-        uniqueChallenges.map((c) => c.id)
+        uniqueChallenges?.map((c) => c.id)
       );
 
     if (countError) {

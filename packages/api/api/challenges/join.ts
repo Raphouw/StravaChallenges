@@ -27,10 +27,11 @@ export default async function handler(
     // Verify JWT
     const payload = verifyJWT(jwt);
 
-    const { invite_code } = req.body as JoinChallengeBody;
+    const { invite_code, code } = req.body as any;
+    const challengeCode = (invite_code || code || '').toUpperCase();
 
-    if (!invite_code) {
-      res.status(400).json({ error: 'Missing challenge invite_code' });
+    if (!challengeCode) {
+      res.status(400).json({ error: 'Missing challenge code' });
       return;
     }
 
@@ -38,7 +39,7 @@ export default async function handler(
     const { data: challenge, error: findError } = await supabase
       .from('challenges')
       .select('id')
-      .eq('invite_code', invite_code.toUpperCase())
+      .eq('invite_code', challengeCode)
       .single();
 
     if (findError || !challenge) {
