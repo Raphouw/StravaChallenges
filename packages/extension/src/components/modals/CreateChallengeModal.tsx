@@ -56,6 +56,16 @@ export function CreateChallengeModal({
     setLoading(true);
     setError(null);
 
+    // Validate dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (start > end) {
+      setError('End date must be after start date');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('https://strava-challenges-extension.vercel.app/api/challenges/create', {
         method: 'POST',

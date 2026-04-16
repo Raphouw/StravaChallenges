@@ -44,6 +44,15 @@ export default async function handler(
       return;
     }
 
+    // Validate dates
+    const startDate = new Date(starts_at);
+    const endDate = new Date(ends_at);
+
+    if (startDate > endDate) {
+      res.status(400).json({ error: 'End date must be after start date' });
+      return;
+    }
+
     // Generate short invite_code (6 random alphanumeric chars)
     const invite_code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
