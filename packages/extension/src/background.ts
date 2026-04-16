@@ -9,10 +9,16 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       const jwt = decodeURIComponent(tokenMatch[1]);
       const userId = userIdMatch ? decodeURIComponent(userIdMatch[1]) : '';
 
-      chrome.storage.local.set({
-        AUTH_TOKEN: jwt,
-        USER_ID: userId
-      }, () => {
+      const storageData: Record<string, string> = {
+        strava_challenge_jwt: jwt,
+      };
+
+      if (userId) {
+        const userData = JSON.stringify({ id: userId });
+        storageData.strava_challenge_user = userData;
+      }
+
+      chrome.storage.local.set(storageData, () => {
         chrome.tabs.remove(tabId);
       });
     }

@@ -10,9 +10,33 @@ export function useAuth() {
     error: null,
   });
 
-  // Load auth from storage on mount
+  // Load auth from storage on mount and listen for changes
   useEffect(() => {
     loadAuth();
+
+    // Listen for storage changes from background service worker
+    const listener = (changes: Record<string, chrome.storage.StorageChange>) => {
+      if (changes.strava_challenge_jwt?.newValue) {
+        setAuthState((prev) => ({
+          ...prev,
+          jwt: changes.strava_challenge_jwt.newValue,
+        }));
+      }
+      if (changes.strava_challenge_user?.newValue) {
+        try {
+          const user = JSON.parse(changes.strava_challenge_user.newValue) as User;
+          setAuthState((prev) => ({
+            ...prev,
+            user,
+          }));
+        } catch (e) {
+          console.error('Failed to parse user from storage', e);
+        }
+      }
+    };
+
+    chrome.storage.onChanged.addListener(listener);
+    return () => chrome.storage.onChanged.removeListener(listener);
   }, []);
 
   async function loadAuth() {
