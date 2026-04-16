@@ -59,24 +59,25 @@ function setCorsHeaders(res: VercelResponse) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const path = req.url?.split('?')[0];
-  
-  if (path?.startsWith('/api/challenges/') && req.method === 'OPTIONS') {
+  const pathParam = typeof req.query.__path === 'string' ? req.query.__path : Array.isArray(req.query.__path) ? req.query.__path[0] : '';
+  const path = `/${pathParam}`;
+
+  if (path === '/' && req.method === 'OPTIONS') {
     setCorsHeaders(res);
     return res.status(200).end();
   }
-  
-  if (path?.includes('/challenges/create') && req.method === 'POST') return handleCreate(req, res);
-  if (path?.includes('/challenges/list-public') && req.method === 'GET') { setCorsHeaders(res); return handleListPublic(req, res); }
-  if (path?.includes('/challenges/list') && req.method === 'GET') return handleList(req, res);
-  if (path?.includes('/challenges/join') && req.method === 'POST') return handleJoin(req, res);
-  if (path?.includes('/challenges/leaderboard') && req.method === 'GET') { setCorsHeaders(res); return handleLeaderboard(req, res); }
-  if (path?.includes('/challenges/public') && req.method === 'GET') { setCorsHeaders(res); return handlePublic(req, res); }
-  if (path?.includes('/challenges/backfill') && req.method === 'POST') return handleBackfill(req, res);
-  if (path?.includes('/challenges/delete') && req.method === 'DELETE') return handleDelete(req, res);
-  if (path?.includes('/challenges/manual-backfill') && req.method === 'POST') return handleManualBackfill(req, res);
-  
-  res.status(404).json({ error: 'Not found' });
+
+  if (path === '/create' && req.method === 'POST') return handleCreate(req, res);
+  if (path === '/list-public' && req.method === 'GET') { setCorsHeaders(res); return handleListPublic(req, res); }
+  if (path === '/list' && req.method === 'GET') return handleList(req, res);
+  if (path === '/join' && req.method === 'POST') return handleJoin(req, res);
+  if (path === '/leaderboard' && req.method === 'GET') { setCorsHeaders(res); return handleLeaderboard(req, res); }
+  if (path === '/public' && req.method === 'GET') { setCorsHeaders(res); return handlePublic(req, res); }
+  if (path === '/backfill' && req.method === 'POST') return handleBackfill(req, res);
+  if (path === '/delete' && req.method === 'DELETE') return handleDelete(req, res);
+  if (path === '/manual-backfill' && req.method === 'POST') return handleManualBackfill(req, res);
+
+  res.status(404).json({ error: 'Not found', path, received: req.query.__path });
 }
 
 async function handleCreate(req: VercelRequest, res: VercelResponse): Promise<void> {

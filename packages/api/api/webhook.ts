@@ -15,9 +15,10 @@ interface WebhookBody {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const path = req.url?.split('?')[0];
+  const pathParam = typeof req.query.__path === 'string' ? req.query.__path : Array.isArray(req.query.__path) ? req.query.__path[0] : '';
+  const path = `/${pathParam}`;
 
-  if (path?.includes('/webhook/strava')) {
+  if (path === '/strava') {
     return handleStrava(req, res);
   }
 

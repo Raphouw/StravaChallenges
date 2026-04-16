@@ -25,20 +25,18 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  const path = req.url?.split('?')[0];
+  const pathParam = typeof req.query.__path === 'string' ? req.query.__path : Array.isArray(req.query.__path) ? req.query.__path[0] : '';
+  const path = `/${pathParam}`;
 
-  // /api/auth/strava - Login flow
-  if (path?.endsWith('/strava') && req.method === 'GET') {
+  if (path === '/strava' && req.method === 'GET') {
     return handleStrava(req, res);
   }
 
-  // /api/auth/callback - OAuth callback
-  if (path?.endsWith('/callback') && req.method === 'GET') {
+  if (path === '/callback' && req.method === 'GET') {
     return handleCallback(req, res);
   }
 
-  // /api/auth/refresh - Token refresh
-  if (path?.endsWith('/refresh') && req.method === 'POST') {
+  if (path === '/refresh' && req.method === 'POST') {
     return handleRefresh(req, res);
   }
 

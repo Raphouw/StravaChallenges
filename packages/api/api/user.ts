@@ -3,9 +3,10 @@ import { supabase, User } from './_utils/supabase.js';
 import { verifyJWT } from './_utils/jwt.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const path = req.url?.split('?')[0];
+  const pathParam = typeof req.query.__path === 'string' ? req.query.__path : Array.isArray(req.query.__path) ? req.query.__path[0] : '';
+  const path = `/${pathParam}`;
 
-  if (path?.includes('/user/me') && req.method === 'GET') {
+  if (path === '/me' && req.method === 'GET') {
     return handleMe(req, res);
   }
 

@@ -1,9 +1,10 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/api/auth/:path*", "destination": "/api/auth" },
-    { "source": "/api/challenges/:path*", "destination": "/api/challenges" },
-    { "source": "/api/user/:path*", "destination": "/api/user" },
-    { "source": "/api/webhook/:path*", "destination": "/api/webhook" }
+    { "source": "/api/auth/:path*", "destination": "/api/auth?__path=:path" },
+    { "source": "/api/challenges/:path*", "destination": "/api/challenges?__path=:path" },
+    { "source": "/api/user/:path*", "destination": "/api/user?__path=:path" },
+    { "source": "/api/webhook/:path*", "destination": "/api/webhook?__path=:path" }
   ]
 }
+
