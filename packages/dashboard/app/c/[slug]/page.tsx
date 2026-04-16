@@ -56,6 +56,42 @@ export default function ChallengePage({
   const [segment, setSegment] = useState<PublicChallengeResponse['segment']>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const canDeleteChallenge =
+    params.slug.includes('test') ||
+    (typeof window !== 'undefined' && localStorage.getItem('admin') === 'true');
+
+  const handleDelete = async () => {
+    if (!challenge || !window.confirm('Delete this challenge?')) return;
+
+    setIsDeleting(true);
+    try {
+      const jwtToken = localStorage.getItem('strava_challenge_jwt');
+      const response = await fetch(
+        'https://strava-challenges-extension.vercel.app/api/challenges/delete',
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${jwtToken || ''}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ challengeId: challenge.id }),
+        }
+      );
+
+      if (response.ok) {
+        window.location.href = '/';
+      } else {
+        alert('Failed to delete challenge');
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert('Error deleting challenge');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     async function loadChallenge() {
@@ -127,20 +163,31 @@ export default function ChallengePage({
         </Link>
 
         <div className="bg-white rounded-lg border border-gray-200 p-8 mb-8">
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              {challenge.name}
-            </h1>
-            <div className="flex items-center gap-4 text-gray-600">
-              <span className="px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded">
-                {challenge.type} challenge
-              </span>
-              <span>
-                {daysRemaining > 0
-                  ? `${daysRemaining}d left`
-                  : 'Challenge ended'}
-              </span>
+          <div className="mb-6 flex items-start justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                {challenge.name}
+              </h1>
+              <div className="flex items-center gap-4 text-gray-600">
+                <span className="px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded">
+                  {challenge.type} challenge
+                </span>
+                <span>
+                  {daysRemaining > 0
+                    ? `${daysRemaining}d left`
+                    : 'Challenge ended'}
+                </span>
+              </div>
             </div>
+            {canDeleteChallenge && (
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
+              >
+                {isDeleting ? '...' : '🗑️ Delete'}
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-6">

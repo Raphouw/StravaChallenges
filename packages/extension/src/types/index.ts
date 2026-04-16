@@ -3,6 +3,7 @@ export interface User {
   strava_id: number;
   name: string;
   profile_pic_url?: string;
+  is_admin?: boolean;
 }
 
 export interface Challenge {

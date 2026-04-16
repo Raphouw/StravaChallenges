@@ -26,9 +26,41 @@ export function HomeScreen({
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const { challenges, loading } = useChallengesList(auth.jwt, refreshKey);
+  const isAdmin = user?.is_admin === true;
+
+  const handleDeleteChallenge = async (challengeId: string) => {
+    if (!window.confirm('Are you sure you want to delete this challenge?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        'https://strava-challenges-extension.vercel.app/api/challenges/delete',
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${auth.jwt}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ challengeId }),
+        }
+      );
+
+      if (response.ok) {
+        setRefreshKey((prev) => prev + 1);
+      } else {
+        alert('Failed to delete challenge');
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert('Error deleting challenge');
+    }
+  };
+
   return (
     <div className="w-full h-full flex flex-col bg-gray-50">
       {/* Header */}
@@ -106,7 +138,9 @@ export function HomeScreen({
                   challenge={challenge as any}
                   jwt={auth.jwt}
                   userId={user?.id || ''}
+                  isAdmin={isAdmin}
                   onJoinClick={() => setShowJoinModal(true)}
+                  onDelete={handleDeleteChallenge}
                 />
               ))}
             </div>
@@ -129,7 +163,41 @@ export function HomeScreen({
         >
           Join Challenge
         </Button>
+        {isAdmin && (
+          <Button
+            className="flex-1"
+            variant="secondary"
+            onClick={() => setShowAdminPanel(!showAdminPanel)}
+          >
+            🔧 Admin
+          </Button>
+        )}
       </div>
+
+      {/* Admin Panel */}
+      {isAdmin && showAdminPanel && (
+        <div className="bg-orange-50 border-t border-orange-200 p-4 max-h-48 overflow-y-auto">
+          <p className="text-xs font-semibold text-orange-700 mb-2">Admin Panel - All Challenges</p>
+          <div className="space-y-1">
+            {challenges.map((challenge) => (
+              <div
+                key={challenge.id}
+                className="flex items-center justify-between bg-white p-2 rounded text-xs border border-orange-200"
+              >
+                <span className="truncate flex-1">{challenge.name}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteChallenge(challenge.id)}
+                  className="text-red-600 hover:text-red-700 ml-2"
+                >
+                  🗑️
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {auth.jwt && (

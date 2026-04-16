@@ -8,17 +8,22 @@ interface ChallengeCardProps {
   challenge: Challenge & { is_owner: boolean; is_member: boolean; member_count: number };
   jwt: string | null;
   userId: string;
+  isAdmin?: boolean;
   onJoinClick: () => void;
+  onDelete?: (challengeId: string) => void;
 }
 
 export function ChallengeCard({
   challenge,
   jwt,
   userId,
+  isAdmin,
   onJoinClick,
+  onDelete,
 }: ChallengeCardProps) {
   const isOwner = challenge.is_owner;
   const isMember = challenge.is_member;
+  const canDelete = isOwner || isAdmin;
   const { entries: leaderboardEntries, totals, segment, loading: leaderboardLoading } = useLeaderboard(challenge.id, jwt);
 
   const daysRemaining = Math.ceil(
@@ -75,15 +80,32 @@ export function ChallengeCard({
               </div>
             )}
           </div>
-          {!isMember && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={onJoinClick}
-            >
-              Join
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {!isMember && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={onJoinClick}
+                className="flex-1"
+              >
+                Join
+              </Button>
+            )}
+            {canDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (window.confirm('Delete this challenge?')) {
+                    onDelete?.(challenge.id);
+                  }
+                }}
+                className="text-red-600 hover:text-red-700"
+              >
+                🗑️
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Segment Info */}
