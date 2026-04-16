@@ -54,9 +54,46 @@ function App() {
   );
 }
 
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('Popup error:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '10px', color: 'red', fontSize: '12px', whiteSpace: 'pre-wrap', overflowY: 'auto', maxHeight: '560px' }}>
+          <strong>Error:</strong> {this.state.error?.message}
+          <br />
+          <br />
+          <small style={{ color: '#666' }}>
+            {this.state.error?.stack}
+          </small>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const root = createRoot(document.getElementById('root')!);
 root.render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 );
