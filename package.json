@@ -15,10 +15,13 @@
     "build:extension": "npm run build --workspace=packages/extension",
     "build:api": "npm run build --workspace=packages/api",
     "build:dashboard": "npm run build --workspace=packages/dashboard",
-    "type-check": "npm run type-check --workspaces --if-present"
+    "type-check": "npm run type-check --workspaces --if-present",
+    "webhook:register": "tsx scripts/register-webhook.ts"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "dotenv": "^17.4.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.0"
   }
 }

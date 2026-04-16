@@ -19,7 +19,13 @@ export function ChallengeCard({
 }: ChallengeCardProps) {
   const isOwner = challenge.is_owner;
   const isMember = challenge.is_member;
-  const { entries: leaderboardEntries, loading: leaderboardLoading } = useLeaderboard(challenge.id, jwt);
+  const { entries: leaderboardEntries, totals, segment, loading: leaderboardLoading } = useLeaderboard(challenge.id, jwt);
+
+  const daysRemaining = Math.ceil(
+    (new Date(challenge.ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  const userPosition = leaderboardEntries.find(e => e.user_id === userId);
 
   return (
     <Card>
@@ -36,12 +42,23 @@ export function ChallengeCard({
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {challenge.type} challenge
-            </p>
-            <p className="text-xs text-gray-500">
-              Until {new Date(challenge.ends_at).toLocaleDateString()}
-            </p>
+            <div className="mt-1 space-y-1">
+              <p className="text-xs text-gray-600">
+                {challenge.type} challenge • {daysRemaining > 0 ? `${daysRemaining}d left` : 'Ended'}
+              </p>
+              {userPosition && (
+                <p className={`text-xs font-semibold ${userPosition.rank === 1 ? 'text-orange-600' : 'text-gray-600'}`}>
+                  {userPosition.rank === 1
+                    ? '🏆 You lead!'
+                    : `📍 ${userPosition.rank}${['st', 'nd', 'rd'][userPosition.rank - 1] || 'th'}, ${userPosition.delta_from_leader}`}
+                </p>
+              )}
+              {totals && (
+                <p className="text-xs text-gray-500">
+                  {totals.active_participants} participants • {Math.round(totals.total_distance)} km • {totals.total_elevation}m D+
+                </p>
+              )}
+            </div>
             {isOwner && challenge.invite_code && (
               <div className="mt-2 p-2 bg-gray-50 rounded flex items-center justify-between">
                 <span className="text-xs text-gray-600">
@@ -68,6 +85,26 @@ export function ChallengeCard({
             </Button>
           )}
         </div>
+
+        {/* Segment Info */}
+        {segment && (
+          <div className="pt-2 border-t border-gray-200">
+            <a
+              href={`https://www.strava.com/segments/${segment.strava_segment_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block hover:bg-gray-50 rounded p-2 transition"
+            >
+              <p className="text-xs font-semibold text-gray-700">Segment</p>
+              <p className="text-xs text-orange-600 font-medium hover:underline">
+                {segment.name}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {(segment.distance / 1000).toFixed(1)} km • {segment.elevation_gain}m D+
+              </p>
+            </a>
+          </div>
+        )}
 
         {/* Leaderboard */}
         <div className="pt-2 border-t border-gray-200">
