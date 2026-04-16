@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build --workspace=packages/api && npm run build --workspace=packages/dashboard",
+  "devCommand": "npm run dev --workspace=packages/dashboard",
+  "installCommand": "npm install",
+  "env": {
+    "STRAVA_CLIENT_ID": "@strava_client_id",
+    "STRAVA_CLIENT_SECRET": "@strava_client_secret",
+    "WEBHOOK_VERIFY_TOKEN": "@webhook_verify_token",
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_ANON_KEY": "@supabase_anon_key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "JWT_SECRET": "@jwt_secret",
+    "ENCRYPTION_KEY": "@encryption_key",
+    "APP_URL": "@app_url"
+  },
+  "functions": {
+    "packages/api/webhook/*.ts": {
+      "memory": 512,
+      "maxDuration": 10
+    },
+    "packages/api/auth/*.ts": {
+      "memory": 256,
+      "maxDuration": 10
+    }
+  },
+  "builds": [
+    {
+      "src": "packages/api/**/*.ts",
+      "use": "@vercel/node",
+      "config": {
+        "nodeVersion": "20.x"
+      }
+    }
+  ]
+}

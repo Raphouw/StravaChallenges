@@ -1,0 +1,24 @@
+{
+  "name": "strava-challenge",
+  "version": "0.0.1",
+  "description": "Strava challenge tracker extension + backend",
+  "private": true,
+  "workspaces": [
+    "packages/extension",
+    "packages/api",
+    "packages/dashboard"
+  ],
+  "scripts": {
+    "dev:extension": "npm run dev --workspace=packages/extension",
+    "dev:api": "npm run dev --workspace=packages/api",
+    "dev:dashboard": "npm run dev --workspace=packages/dashboard",
+    "build:extension": "npm run build --workspace=packages/extension",
+    "build:api": "npm run build --workspace=packages/api",
+    "build:dashboard": "npm run build --workspace=packages/dashboard",
+    "type-check": "npm run type-check --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

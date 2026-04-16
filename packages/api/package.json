@@ -1,0 +1,23 @@
+{
+  "name": "@strava-challenge/api",
+  "version": "0.0.1",
+  "description": "Vercel serverless functions for Strava Challenge",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "tsc",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "crypto-js": "^4.2.0",
+    "jsonwebtoken": "^9.1.0"
+  },
+  "devDependencies": {
+    "@types/crypto-js": "^4.2.0",
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
