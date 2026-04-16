@@ -65,6 +65,7 @@ export default async function handler(
       .insert({
         challenge_id: challenge.id,
         user_id: payload.userId,
+        joined_at: new Date().toISOString(),
       });
 
     if (joinError) {

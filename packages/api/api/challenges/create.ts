@@ -80,7 +80,7 @@ export default async function handler(
       .from('challenge_segments')
       .insert({
         challenge_id: challenge.id,
-        segment_id,
+        strava_segment_id: segment_id,
       });
 
     if (segmentError) {
@@ -95,6 +95,7 @@ export default async function handler(
       .insert({
         challenge_id: challenge.id,
         user_id: payload.userId,
+        joined_at: new Date().toISOString(),
       });
 
     if (memberError) {
