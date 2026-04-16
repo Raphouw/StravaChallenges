@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Strava Challenge - Authentication Successful</title>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+      margin: 0 0 0.5rem 0;
+    }
+    p {
+      color: #666;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Authentication Successful! 🎉</h1>
+    <p>You can now close this window. The extension is ready to use.</p>
+  </div>
+
+  <script>
+    // Extract token and user from URL
+    const params = new URLSearchParams(window.location.search);
+    const jwt = params.get('jwt');
+    const userId = params.get('userId');
+
+    if (jwt && userId) {
+      // Parse JWT payload to get user info (without verification, as we don't need to)
+      try {
+        const payload = JSON.parse(atob(jwt.split('.')[1]));
+        const user = {
+          id: payload.userId,
+          strava_id: payload.stravaId,
+          name: 'Athlete', // Will be updated from API
+          profile_pic_url: undefined,
+        };
+
+        // Send message to background script
+        chrome.runtime
+          .sendMessage({
+            action: 'AUTH_SUCCESS',
+            jwt,
+            user,
+          })
+          .then(() => {
+            // Close this tab after a short delay
+            setTimeout(() => {
+              window.close();
+            }, 500);
+          })
+          .catch((error) => {
+            console.error('Error sending auth message:', error);
+            document.querySelector('p').textContent =
+              'Failed to authenticate. Please try again.';
+          });
+      } catch (error) {
+        console.error('Failed to parse JWT:', error);
+        document.querySelector('p').textContent =
+          'Failed to authenticate. Please try again.';
+      }
+    } else {
+      document.querySelector('p').textContent =
+        'Missing authentication parameters. Please try again.';
+    }
+  </script>
+</body>
+</html>

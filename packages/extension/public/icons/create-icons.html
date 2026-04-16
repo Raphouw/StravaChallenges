@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Extension Icons</title>
+</head>
+<body>
+  <h1>Extension Icons Generator</h1>
+  <p>Run this script to generate icon PNGs from SVG</p>
+  
+  <script>
+    // Create SVG for each size and convert to PNG
+    const sizes = [16, 48, 128];
+    const colors = {
+      orange: '#FC4C02',
+      white: '#FFFFFF',
+    };
+
+    sizes.forEach((size) => {
+      const svg = `
+        <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="${size}" height="${size}" fill="${colors.orange}"/>
+          <text x="${size/2}" y="${size/2 + size/8}" font-size="${size * 0.5}" font-weight="bold" 
+                fill="${colors.white}" text-anchor="middle" font-family="Arial, sans-serif">SC</text>
+        </svg>
+      `;
+      
+      // Log for manual copying
+      console.log(`Icon ${size}x${size}:`, svg);
+    });
+  </script>
+</body>
+</html>

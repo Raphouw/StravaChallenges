@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Strava Challenge Tracker",
+  "version": "0.0.1",
+  "description": "Track challenges with your Strava friends in real-time",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://strava-challenges-extension.vercel.app/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Strava Challenge Tracker"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon-16.svg",
+    "48": "icons/icon-48.svg",
+    "128": "icons/icon-128.svg"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["auth-success.html"],
+      "matches": ["https://strava-challenges-extension.vercel.app/*"]
+    }
+  ]
+}
