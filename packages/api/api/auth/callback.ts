@@ -137,10 +137,14 @@ export default async function handler(
 
     // 5. Redirect back with JWT token
     const redirectUrl = new URL(`${APP_URL}/auth-success`);
-    redirectUrl.searchParams.set('jwt', jwtToken);
+    redirectUrl.searchParams.set('token', jwtToken);
     redirectUrl.searchParams.set('userId', userId);
 
-    res.redirect(redirectUrl.toString());
+    const finalUrl = redirectUrl.toString();
+    console.log('JWT généré:', jwtToken);
+    console.log('Redirection vers:', finalUrl);
+
+    return res.redirect(302, finalUrl);
   } catch (error) {
     console.error('OAuth callback error:', error);
     res.status(500).json({
