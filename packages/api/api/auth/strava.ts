@@ -12,7 +12,7 @@ export default async function handler(
     return;
   }
 
-  const redirectUri = `${APP_URL}/api/auth/callback`;
+  const redirectUri = `https://strava-challenges-extension.vercel.app/api/auth/callback`;
 
   const params = new URLSearchParams({
     client_id: STRAVA_CLIENT_ID,
@@ -23,5 +23,5 @@ export default async function handler(
 
   const stravaAuthUrl = `https://www.strava.com/oauth/authorize?${params.toString()}`;
 
-  res.redirect(stravaAuthUrl);
+  return res.redirect(stravaAuthUrl);
 }

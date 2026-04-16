@@ -35,10 +35,9 @@ export default async function handler(
   // Handle Strava OAuth errors
   if (error) {
     const errorMessage = `${error}: ${error_description || 'Unknown error'}`;
-    res.redirect(
-      `${APP_URL}/auth-error?message=${encodeURIComponent(errorMessage)}`
+    return res.redirect(
+      `https://strava-challenges-extension.vercel.app/auth-error?message=${encodeURIComponent(errorMessage)}`
     );
-    return;
   }
 
   if (!code) {
@@ -136,15 +135,11 @@ export default async function handler(
     const jwtToken = generateJWT(userId, tokenData.athlete.id);
 
     // 5. Redirect back with JWT token
-    const redirectUrl = new URL(`${APP_URL}/auth-success`);
-    redirectUrl.searchParams.set('token', jwtToken);
-    redirectUrl.searchParams.set('userId', userId);
-
-    const finalUrl = redirectUrl.toString();
     console.log('JWT généré:', jwtToken);
-    console.log('Redirection vers:', finalUrl);
+    const redirectUrl = `https://strava-challenges-extension.vercel.app/auth-success?token=${encodeURIComponent(jwtToken)}&userId=${encodeURIComponent(userId)}`;
+    console.log('Redirection vers:', redirectUrl);
 
-    return res.redirect(302, finalUrl);
+    return res.redirect(redirectUrl);
   } catch (error) {
     console.error('OAuth callback error:', error);
     res.status(500).json({
