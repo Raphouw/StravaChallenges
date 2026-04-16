@@ -99,30 +99,57 @@ export function HomeScreen({
             </Card>
           ) : (
             <div className="space-y-3">
-              {challenges.map((challenge) => (
-                <Card key={challenge.id}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">
-                        {challenge.name}
-                      </h4>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {challenge.type} challenge
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Until {new Date(challenge.ends_at).toLocaleDateString()}
-                      </p>
+              {challenges.map((challenge) => {
+                const isOwner = (challenge as any).is_owner;
+                return (
+                  <Card key={challenge.id}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-gray-900">
+                            {challenge.name}
+                          </h4>
+                          {isOwner && (
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">
+                              Owner
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {challenge.type} challenge
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Until {new Date(challenge.ends_at).toLocaleDateString()}
+                        </p>
+                        {isOwner && challenge.invite_code && (
+                          <div className="mt-2 p-2 bg-gray-50 rounded flex items-center justify-between">
+                            <span className="text-xs text-gray-600">
+                              Code: <span className="font-mono font-semibold">{challenge.invite_code}</span>
+                            </span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(challenge.invite_code || '');
+                              }}
+                              className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {!isOwner && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setShowJoinModal(true)}
+                        >
+                          Join
+                        </Button>
+                      )}
                     </div>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => setShowJoinModal(true)}
-                    >
-                      Join
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
