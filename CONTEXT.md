@@ -2,9 +2,14 @@
 
 ## Project Overview
 
-A full-stack Strava segment challenge platform with a Chrome MV3 extension, Next.js public dashboard, and Vercel serverless API. Users can create challenges on specific Strava segments, invite friends to compete, and track leaderboard rankings with enriched statistics.
+A full-stack Strava segment challenge platform with a Chrome MV3 extension, Next.js dashboard with authentication, and Vercel serverless API. Users can create challenges on specific Strava segments, invite friends to compete, track leaderboard rankings, and manage challenges from both extension and web dashboard.
 
-**Tech Stack:** React, TypeScript, Next.js, Supabase PostgreSQL, Vercel Functions, Chrome MV3, Tailwind CSS
+**Tech Stack:** React 18, TypeScript, Next.js 14 (App Router), Supabase PostgreSQL, Vercel Functions, Chrome MV3, Tailwind CSS
+
+**Deployment:**
+- **API:** https://strava-challenges-extension.vercel.app (Vercel)
+- **Dashboard:** https://strava-challenges-dashboard.vercel.app (Vercel)
+- **Database:** Supabase PostgreSQL
 
 ---
 
@@ -12,76 +17,104 @@ A full-stack Strava segment challenge platform with a Chrome MV3 extension, Next
 
 ```
 packages/
-├── api/                    → Vercel serverless functions (4 consolidated handlers)
-├── extension/              → Chrome MV3 extension
-├── dashboard/              → Next.js public dashboard
-└── shared-types/           → Shared TypeScript interfaces (if used)
+├── api/                    → Vercel serverless functions (11 individual handlers)
+├── extension/              → Chrome MV3 extension (React popup)
+├── dashboard/              → Next.js 14 dashboard with auth + create/join
+└── shared-types/           → Shared TypeScript interfaces
 ```
 
 ---
 
 ## API Layer (`packages/api/`)
 
-**Status:** ✅ Complete - 4 consolidated serverless functions (under Vercel Hobby plan limit of 12)
+**Status:** ✅ Complete - 11 individual serverless functions
 
-### Consolidated Handlers
+### API Functions
 
-Each function routes multiple endpoints via path-based dispatch:
+Vercel project structure with individual handler files:
 
-#### 1. **auth.ts** - Authentication & Token Management
-- `GET /api/auth/strava` → Initiates Strava OAuth flow
-- `GET /api/auth/callback` → OAuth callback handler (creates/updates user, generates JWT)
-- `POST /api/auth/refresh` → Validates JWT, refreshes expired Strava tokens
+#### 1. **auth/strava.ts** - Strava OAuth Initiation
+- `GET /api/auth/strava?redirect_url=<url>` → Initiates OAuth flow
+  - Supports dynamic `redirect_url` parameter for dashboard or extension
+  - Passes redirect_url in state for callback to use
+
+#### 2. **auth/callback.ts** - OAuth Callback Handler
+- `GET /api/auth/callback?code=...&state=...` → OAuth callback
+  - Creates/updates user in Supabase
+  - Generates JWT token
+  - Encrypts Strava tokens
+  - Redirects to extension or dashboard based on state's redirect_url
+  - Falls back to `/auth-success?token=...&name=...&profileUrl=...` for extension
+
+#### 3. **auth/refresh.ts** - Token Refresh
+- `POST /api/auth/refresh` → Validates JWT, refreshes expired tokens
 
 **Key Features:**
-- Strava OAuth 2.0 integration with token encryption/decryption
+- Strava OAuth 2.0 with support for multiple redirect destinations
+- Token encryption/decryption with AES-256
 - Automatic token refresh before expiry
-- JWT generation for session management
+- JWT generation + verification
 - User creation on first login
 
 ---
 
-#### 2. **challenges.ts** - Challenge Management (9 endpoints consolidated)
+#### 4-12. **challenges/*.ts** - Challenge Management (8 endpoints)
 
-**Create Challenge**
-- `POST /api/challenges/create` → Creates new challenge, fetches segment details from Strava, adds creator as member, triggers historical backfill if starts_at < now
+**4. create.ts** - Create Challenge
+- `POST /api/challenges/create` → Creates new challenge
+  - Stores distance in **meters** (NOT km) from Strava API
+  - Fetches segment details: name, distance, elevation_gain
+  - Adds creator as member
+  - Triggers historical backfill if starts_at < now
+  - Returns invite_code for sharing
 
-**List Challenges**
+**5. list.ts** - List User's Challenges
 - `GET /api/challenges/list` → Lists challenges user owns/participates in (auth required)
-- `GET /api/challenges/list-public` → Lists all challenges without auth (for dashboard)
+- Returns member_count and is_owner metadata
 
-**Challenge Interaction**
-- `POST /api/challenges/join` → Joins challenge by invite code (prevents joining own challenge)
-- `DELETE /api/challenges/delete` → Deletes challenge (owner or admin only)
+**6. list-public.ts** - List All Challenges
+- `GET /api/challenges/list-public` → Lists all challenges without auth
+- Enriched with: participant_count, effort_count, segment data
+- CORS-enabled for dashboard access
 
-**Leaderboard & Stats**
-- `GET /api/challenges/leaderboard?id=<challengeId>` → Fetches leaderboard with enriched per-user stats:
-  - `best_time`, `avg_time`, `last_attempt`, `streak`, `delta_from_leader`
-  - Group totals: `total_attempts`, `total_distance`, `total_elevation`, `active_participants`
+**7. join.ts** - Join Challenge
+- `POST /api/challenges/join` → Joins challenge by invite code
+- Prevents joining own challenge
+- Deduplicates membership (idempotent)
+
+**8. delete.ts** - Delete Challenge
+- `DELETE /api/challenges/delete` → Deletes challenge (owner or admin token only)
+- Cascade deletes: members, segments, efforts
+- Admin token check: `?admin=465786453sd4fsdfsdfsdf456`
+
+**9. leaderboard.ts** - Get Leaderboard
+- `GET /api/challenges/leaderboard?id=<challengeId>` → Fetches leaderboard with enriched stats
+  - Per-user: `best_time`, `avg_time`, `last_attempt`, `streak`, `delta_from_leader`
+  - Group totals: `total_attempts`, `total_distance` (sum from efforts), `total_elevation`, `active_participants`
   - Segment info with Strava metadata
+  - Requires JWT auth
 
-- `GET /api/challenges/public?slug=<slug>` → Public endpoint for dashboard to fetch challenge details + leaderboard
+**10. public.ts** - Get Challenge Detail (Public)
+- `GET /api/challenges/public?slug=<slug>` → Fetches challenge + leaderboard for dashboard
+- No auth required, CORS-enabled
+- Returns same leaderboard structure as leaderboard.ts
 
-**Backfill (Historical Activity Capture)**
-- `POST /api/challenges/backfill` → Fire-and-forget backfill for all members (called after challenge creation if starts_at < now)
-- `POST /api/challenges/manual-backfill` → Manual trigger endpoint for challenge owner
-
-**Backfill Implementation Details:**
-- For each challenge member, fetches their Strava activities from challenge start date to now
-- Checks each activity's segment efforts against challenge segments
-- Inserts matching efforts into database (deduplicates by `strava_effort_id`)
+**11. backfill.ts** - Trigger Historical Backfill
+- `POST /api/challenges/backfill` → Fire-and-forget backfill for challenge members
+- Fetches Strava activities from challenge start_date to now
+- Checks segment efforts against challenge segments
+- Inserts efforts into DB (deduplicates by strava_effort_id)
 - Handles automatic token refresh for expired Strava tokens
-- Runs as background job (fire-and-forget) for performance
 
 ---
 
-#### 3. **user.ts** - User Profile
-- `GET /api/user/me` → Returns current user profile (auth required)
-  - Fields: `id`, `name`, `strava_id`, `profile_pic_url`, `is_admin`
+#### 13. **user/me.ts** - Get User Profile
+- `GET /api/user/me` → Returns current user (auth required)
+- Fields: `id`, `name`, `strava_id`, `profile_pic_url`, `is_admin`
 
 ---
 
-#### 4. **webhook.ts** - Strava Webhook Handler
+#### 14. **webhook/strava.ts** - Strava Webhook Handler
 - `GET /api/webhook/strava?hub.challenge=...` → Webhook verification challenge
 - `POST /api/webhook/strava` → Processes activity creation events in real-time
   - Extracts segment efforts from new activities
@@ -121,152 +154,223 @@ Each function routes multiple endpoints via path-based dispatch:
 
 ## Extension Layer (`packages/extension/`)
 
-**Status:** ✅ Complete - Functional Chrome MV3 extension with login, profile, and challenge management
+**Status:** ✅ Complete - Functional Chrome MV3 extension with dark theme, login, profile, and challenge management
 
 ### Architecture
 
 ```
 src/
 ├── components/
-│   ├── LoginScreen.tsx         → "Connect with Strava" button, OAuth flow
-│   ├── HomeScreen.tsx          → User profile, challenge list, admin panel
-│   └── ChallengeCard.tsx       → Individual challenge card with leaderboard preview
+│   ├── LoginScreen.tsx              → "Connect with Strava" button, dark theme
+│   ├── HomeScreen.tsx               → User profile, challenge list, admin panel, dashboard button
+│   ├── ChallengeCard.tsx            → Challenge card with leaderboard preview
+│   └── modals/
+│       ├── CreateChallengeModal.tsx → Create challenge form (dark styled)
+│       ├── JoinChallengeModal.tsx   → Join challenge by code (dark styled)
+│       └── SuccessModal.tsx         → Challenge created confirmation (opaque dark bg)
 ├── hooks/
-│   ├── useAuth.ts             → JWT + user data from chrome.storage
-│   ├── useChallenges.ts       → Fetch challenges from API
-│   └── useLeaderboard.ts      → Fetch leaderboard with enriched stats + segment info
+│   ├── useAuth.ts                  → JWT + user data from chrome.storage
+│   ├── useChallengesList.ts        → Fetch user's challenges
+│   ├── useLeaderboard.ts           → Fetch leaderboard with enriched stats
+│   └── useUserProfile.ts           → Fetch user profile
 ├── utils/
-│   ├── api.ts                 → fetch() wrapper with JWT Authorization header
-│   └── storage.ts             → chrome.storage.local wrappers
+│   ├── api.ts                      → fetch() wrapper with JWT Authorization header
+│   │                               → API_BASE = https://strava-challenges-extension.vercel.app
+│   └── storage.ts                  → chrome.storage.local wrappers
 ├── types/
-│   └── index.ts               → Challenge, User, LeaderboardEntry interfaces
-├── background.ts              → (future) Service worker for OAuth token interception
-└── popup.tsx                  → Main React entry point
+│   └── index.ts                    → Challenge, User, LeaderboardEntry interfaces
+└── popup.tsx                       → Main React entry point
 ```
 
 ### Key Features
 
 **Authentication Flow**
 1. User clicks "Connect with Strava" button in LoginScreen
-2. Opens new tab to `https://api.../api/auth/strava`
-3. Strava OAuth → redirects to `https://api.../api/auth/callback?code=...`
-4. Backend generates JWT, redirects to `/auth-success?token=...&userId=...&name=...`
-5. auth-success.html sends message to popup: `{ action: 'AUTH_SUCCESS', token, user }`
-6. Popup stores JWT in chrome.storage.local → transitions to HomeScreen
+2. Opens new tab to `https://strava-challenges-extension.vercel.app/api/auth/strava`
+3. Strava OAuth flow
+4. Backend redirects to `/auth-success?token=...&userId=...&name=...&profileUrl=...&stravaId=...`
+5. auth-success.html (extension page) sends message to popup: `{ action: 'AUTH_SUCCESS', token, user }`
+6. Popup stores token + user data in chrome.storage → transitions to HomeScreen
 
 **Challenge Management**
-- HomeScreen displays active challenges (fetched via `GET /api/challenges/list`)
+- HomeScreen displays active challenges (user's challenges + those they joined)
+- Create Challenge modal: Form to create new challenge with segment ID, dates, type
+- Join Challenge modal: Enter 6-letter invite code
 - Each ChallengeCard shows:
-  - Challenge name, type (count/time/elevation), dates, segment info
-  - Leaderboard preview with 🏆 position, delta_from_leader
-  - "Join" button (disabled if owner or already member)
-  - "Delete" button (visible for owner and admin)
-  - 🔧 Admin panel (for is_admin === true users)
+  - Challenge name, type badge, dates remaining, segment info
+  - Leaderboard preview with user's position
+  - "Delete" button (owner or admin only)
+
+**Dashboard Integration**
+- "Open Dashboard" button in HomeScreen footer
+- Directs to: `https://strava-challenges-dashboard.vercel.app/?admin=465786453sd4fsdfsdfsdf456` (if admin)
+- Or: `https://strava-challenges-dashboard.vercel.app/` (if regular user)
 
 **Admin Mode**
-- If user.is_admin === true, HomeScreen shows admin panel
-- Lists all challenges with bulk delete option
-- Allows deletion of any challenge (cascade deletes members, efforts, segments)
+- If user.is_admin === true, HomeScreen shows admin panel toggle
+- Admin panel lists all challenges with delete option
+- Can delete any challenge via admin token
+
+**Dark Theme**
+- Background: slate-900/black gradient
+- Inputs: `bg-slate-800 text-white border-slate-600`
+- Labels: `text-slate-200`
+- Modals: `bg-black/80 overlay` with `bg-slate-900 content`
+- SuccessModal: opaque dark styling with orange code display
 
 ### UI Components
-- **Button, Card, Avatar, Modal** → Reusable Tailwind components
-- **CORS-enabled API** → All extensions requests include Authorization header with Bearer JWT
+- **Button, Card, Avatar** → Reusable Tailwind dark-themed components
+- **Modal system** → Overlays with proper z-index management
+- **Responsive grid** → Challenge list adapts to extension width
 
 ---
 
 ## Dashboard Layer (`packages/dashboard/`)
 
-**Status:** ✅ Complete - Public Next.js site for viewing challenge leaderboards
+**Status:** ✅ Complete - Next.js 14 public/authenticated dashboard with full CMS + leaderboard viewing
 
 ### Pages
 
 **`app/page.tsx`** - Challenge List
-- Fetches all challenges via `GET /api/challenges/list-public` (no auth required)
+- Public view (no auth required) + authenticated view with create/join
+- Fetches challenges via `GET /api/challenges/list-public`
 - Displays challenge cards with:
-  - Name, type badge, days remaining
-  - Participant count
-  - Segment info (Strava link)
+  - Name, type badge, days remaining, progress bar
+  - Participant count, effort count
+  - Segment info (distance km, elevation m)
+  - Invite code display
   - "View →" button
+  - "Join" button (if authenticated)
+- Create Challenge button (if authenticated) → opens modal
+- Navbar shows "Connect with Strava" (guest) or Profile + "Disconnect" (authenticated)
 
 **`app/c/[slug]/page.tsx`** - Challenge Detail Page
-- Fetches challenge by slug via `GET /api/challenges/public?slug=...`
+- Public leaderboard view
+- Fetches challenge + leaderboard via `GET /api/challenges/public?slug=...`
 - Displays:
-  - Challenge details (name, dates, participants, invite code)
-  - Segment info with Strava link
-  - Full leaderboard table with rankings and scores
-  - "Delete" button (visible for test challenges or admin users)
+  - Challenge hero section (name, status, dates remaining)
+  - Stats grid: participants, total efforts, total km, total elevation
+  - Segment card with Strava link
+  - Invite code with copy button
+  - Full leaderboard (top 3 podium + ranked list)
+  - Breadcrumb navigation back to home
+  - Admin delete button (if ?admin=token matches)
+
+**`app/auth-callback`** - OAuth Callback Handler
+- Wrapped in Suspense boundary (Next.js 14 requirement)
+- Captures OAuth params from URL: token, userId, name, profileUrl, stravaId
+- Calls useAuth.login() to store in localStorage
+- Redirects to home page
+- Shows loading spinner while processing
+
+### Authentication
+- **useAuth hook** → Manages JWT + user in localStorage
+- **localStorage keys:**
+  - `strava_jwt` → JWT token
+  - `strava_user` → User object (JSON)
+- **Session persistence** → User stays logged in across page reloads
+- **Logout** → Clears localStorage, hides auth buttons
+
+### Create Challenge Modal
+- Form identical to extension modal
+- Inputs: challenge name, type (count/time/elevation), segment ID, start/end dates
+- Dark styling matching dashboard theme
+- Success modal shows invite code with copy button
 
 ### Caching
-- Both pages use `export const revalidate = 0` (disabled ISR caching)
-- Ensures real-time leaderboard updates
+- Both pages use `'use client'` (client-side rendering)
+- No ISR caching - ensures real-time leaderboard updates
+- Challenge data fetched on every page load
 
 ### Styling
-- Tailwind CSS with orange accent (#FC4C02) for Strava branding
-- Responsive grid layouts for challenge cards
-- Monospace font for invite codes
+- Tailwind CSS dark theme (slate-900, black backgrounds)
+- Orange accent (#fc6702) for Strava branding
+- Responsive grid layouts (1 col mobile, 2 col tablet, 3 col desktop)
+- Dark inputs with white text + slate borders
+- Modal overlays: `bg-black/80` with opaque content cards
 
 ---
 
 ## Deployment
 
-### Vercel Configuration (`vercel.json`)
+### Multiple Vercel Projects
 
-```json
-{
-  "version": 2,
-  "rewrites": [
-    { "source": "/api/auth/:path*", "destination": "/api/auth" },
-    { "source": "/api/challenges/:path*", "destination": "/api/challenges" },
-    { "source": "/api/user/:path*", "destination": "/api/user" },
-    { "source": "/api/webhook/:path*", "destination": "/api/webhook" }
-  ]
-}
-```
+**1. API Backend** (`packages/api/`)
+- **URL:** https://strava-challenges-extension.vercel.app
+- **Type:** Node.js serverless functions
+- **Functions:** 11 individual handlers in `/api/` directory
+- **Environment:** Supabase credentials, JWT secret, Strava OAuth
 
-Maps all sub-paths of each endpoint to its handler function, enabling path-based routing with a single function file.
+**2. Dashboard Frontend** (`packages/dashboard/`)
+- **URL:** https://strava-challenges-dashboard.vercel.app
+- **Type:** Next.js 14 App Router
+- **Features:** Client-side auth via localStorage, OAuth redirect
+- **Environment:** None (API URLs hardcoded)
 
-### Serverless Function Consolidation
+### URL Mapping
 
-**Before:** 14 individual files (exceeded Hobby plan limit of 12)
-```
-/api/auth/strava.ts, /api/auth/callback.ts, /api/auth/refresh.ts
-/api/challenges/create.ts, /api/challenges/list.ts, /api/challenges/list-public.ts
-/api/challenges/join.ts, /api/challenges/leaderboard.ts, /api/challenges/public.ts
-/api/challenges/backfill.ts, /api/challenges/delete.ts, /api/challenges/manual-backfill.ts
-/api/user/me.ts, /api/webhook/strava.ts
-```
+**Extension** → Always points to API backend:
+- API base: https://strava-challenges-extension.vercel.app
+- OAuth: /api/auth/strava (redirects back to extension auth-success.html)
+- Dashboard button: https://strava-challenges-dashboard.vercel.app/?admin=TOKEN
 
-**After:** 4 consolidated handlers (within Hobby plan limit)
-```
-/api/auth.ts                (handles 3 routes)
-/api/challenges.ts          (handles 9 routes)
-/api/user.ts                (handles 1 route)
-/api/webhook.ts             (handles 2 routes)
-```
+**Dashboard** → Points to API backend for data:
+- API base: https://strava-challenges-extension.vercel.app
+- OAuth: /api/auth/strava?redirect_url=https://strava-challenges-dashboard.vercel.app/auth-callback
+- Admin delete: ?admin=TOKEN parameter in URL for dashboard pages
 
 ---
 
 ## Environment Variables
 
-**API (.env.local)**
+**API Backend** (`packages/api/.env.local`)
 ```
-SUPABASE_URL=
-SUPABASE_SERVICE_KEY=
-STRAVA_CLIENT_ID=
-STRAVA_CLIENT_SECRET=
-JWT_SECRET=
-WEBHOOK_VERIFY_TOKEN=
+SUPABASE_URL=https://...supabase.co
+SUPABASE_SERVICE_KEY=...
+STRAVA_CLIENT_ID=...
+STRAVA_CLIENT_SECRET=...
+JWT_SECRET=...
+WEBHOOK_VERIFY_TOKEN=...
+API_URL=https://strava-challenges-extension.vercel.app  (for backfill endpoint)
 ```
 
-**Dashboard (.env.local)**
+**Dashboard Frontend** (`packages/dashboard/.env.local`)
 ```
-# Uses public API at https://strava-challenges-extension.vercel.app
+# No environment variables needed
+# API URLs hardcoded in source pointing to strava-challenges-extension.vercel.app
 ```
 
 **Extension**
 ```
-# Hardcoded API URL in source: https://strava-challenges-extension.vercel.app
+# API_BASE hardcoded in src/utils/api.ts:
+# https://strava-challenges-extension.vercel.app
 ```
+
+---
+
+## Key Bug Fixes & Recent Changes
+
+### Distance Unit Bug (Fixed)
+- **Problem:** Distance stored as km in DB, frontend dividing by 1000 again → showed 0.01km
+- **Solution:** Store distance in **meters** (Strava native unit), frontend divides by 1000 for display
+- **Migration:** `UPDATE challenge_segments SET distance = distance * 1000 WHERE distance < 1000`
+
+### Modal Styling (Fixed)
+- **Problem:** Modals transparent, text invisible on dark background
+- **Solution:** 
+  - Overlay: `bg-black/80` (opaque)
+  - Modal content: `bg-slate-900` with `border-slate-700`
+  - Inputs: `bg-slate-800 text-white placeholder:text-slate-400`
+  - Labels: `text-slate-200`
+
+### Suspense Boundary (Fixed)
+- **Problem:** Next.js 14 build failing - useSearchParams not wrapped in Suspense
+- **Solution:** Extract useSearchParams component, wrap with `<Suspense>` fallback
+
+### Dark Theme (Completed)
+- Extension: Full dark theme (slate-900/black backgrounds, white text)
+- Dashboard: Dark mode with orange accents
+- All inputs, buttons, cards styled for dark theme visibility
 
 ---
 
