@@ -148,9 +148,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         const segmentData = await segmentResponse.json() as any;
         console.log('Strava segment raw:', JSON.stringify(segmentData));
         segmentName = segmentData.name || '';
-        segmentDistance = (segmentData.distance || 0) / 1000;
+        segmentDistance = segmentData.distance || 0;
         segmentElevation = segmentData.total_elevation_gain || 0;
-        console.log('distance km:', segmentDistance);
+        console.log('distance meters:', segmentDistance);
         console.log('elevation gain:', segmentElevation);
       }
     } catch (error) {
