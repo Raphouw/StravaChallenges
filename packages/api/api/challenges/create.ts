@@ -188,7 +188,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     }
 
     const now = new Date();
+    console.log('starts_at:', starts_at);
+    console.log('now:', now.toISOString());
+    console.log('should backfill:', new Date(starts_at) < now);
     if (new Date(starts_at) < now) {
+      console.log('Triggering backfill for challenge', challenge.id);
       triggerBackfill(challenge.id, jwt).catch((err) => {
         console.error('Backfill trigger failed:', err);
       });
