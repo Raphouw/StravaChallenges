@@ -8,19 +8,24 @@ interface AvatarProps {
 
 export function Avatar({ src, alt, size = 'md' }: AvatarProps) {
   const sizeStyles = {
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16',
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-14 h-14 text-base',
   };
 
-  const initials = alt ? alt.charAt(0).toUpperCase() : '?';
+  const initials = alt
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
-    <div className={`${sizeStyles[size]} rounded-full bg-gray-300 overflow-hidden flex items-center justify-center`}>
+    <div className={`${sizeStyles[size]} rounded-full bg-gradient-to-br from-purple-600 to-blue-600 overflow-hidden flex items-center justify-center flex-shrink-0`}>
       {src ? (
         <img src={src} alt={alt || 'User'} className="w-full h-full object-cover" />
       ) : (
-        <span className="text-gray-600 text-sm font-semibold">
+        <span className="text-white font-semibold">
           {initials}
         </span>
       )}

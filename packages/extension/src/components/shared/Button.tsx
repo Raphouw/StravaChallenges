@@ -13,19 +13,19 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    'font-semibold rounded transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
+    'font-semibold rounded transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variantStyles = {
     primary:
-      'bg-strava-orange text-white hover:bg-orange-600 active:bg-orange-700',
-    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 active:bg-gray-400',
-    ghost: 'text-strava-orange hover:bg-orange-50 active:bg-orange-100',
+      'bg-orange-600 text-white hover:bg-orange-700 active:bg-orange-800',
+    secondary: 'bg-slate-700 text-gray-100 hover:bg-slate-600 active:bg-slate-500',
+    ghost: 'text-orange-400 hover:bg-slate-700/50 active:bg-slate-700',
   };
 
   const sizeStyles = {
-    sm: 'px-3 py-1 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg',
+    sm: 'px-2.5 py-1 text-xs',
+    md: 'px-3 py-1.5 text-sm',
+    lg: 'px-4 py-2 text-base',
   };
 
   return (

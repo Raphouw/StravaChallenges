@@ -61,14 +61,19 @@ export function HomeScreen({
     }
   };
 
+  const openDashboard = () => {
+    const dashboardUrl = 'https://strava-challenges-extension.vercel.app';
+    chrome.tabs.create({ url: dashboardUrl });
+  };
+
   return (
-    <div className="w-full h-full flex flex-col bg-gray-50">
+    <div className="w-full h-full flex flex-col bg-gradient-to-b from-slate-900 to-black text-white">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
+      <div className="bg-gradient-to-b from-slate-800/50 to-slate-900 border-b border-slate-700 p-4">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1">
             {profileLoading ? (
-              <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse" />
+              <div className="w-10 h-10 rounded-full bg-slate-700 animate-pulse" />
             ) : (
               <Avatar
                 src={user?.profile_pic_url}
@@ -76,62 +81,65 @@ export function HomeScreen({
                 size="md"
               />
             )}
-            <div className="text-left flex-1">
+            <div className="text-left flex-1 min-w-0">
               {profileLoading ? (
                 <>
-                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-2" />
-                  <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-3 w-20 bg-slate-700 rounded animate-pulse mb-1" />
+                  <div className="h-2 w-16 bg-slate-700 rounded animate-pulse" />
                 </>
               ) : (
                 <>
-                  <h2 className="font-semibold text-gray-900 truncate">{user?.name || 'Unknown User'}</h2>
-                  <p className="text-xs text-gray-500">Strava #{user?.strava_id || '-'}</p>
+                  <h2 className="font-semibold text-white text-sm truncate">{user?.name || 'Unknown'}</h2>
+                  <p className="text-xs text-gray-400">Strava #{user?.strava_id || '-'}</p>
                 </>
               )}
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={onLogout}
+            className="text-xs text-gray-400 hover:text-gray-200 transition px-2 py-1 rounded hover:bg-slate-700/50"
           >
             Logout
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-3">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold py-2 px-3 rounded transition"
+          >
+            + Create
+          </button>
+          <button
+            onClick={() => setShowJoinModal(true)}
+            className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold py-2 px-3 rounded transition"
+          >
+            📌 Join
+          </button>
+        </div>
+
+        {/* Challenges Section */}
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Active Challenges
+          <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+            <span>🏔️</span> Active Challenges
           </h3>
 
           {loading ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">Loading challenges...</p>
+            <div className="text-center py-6">
+              <div className="inline-block w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs text-gray-400 mt-2">Loading...</p>
             </div>
           ) : challenges.length === 0 ? (
-            <Card className="text-center py-8">
-              <p className="text-gray-500 mb-4">No active challenges yet</p>
-              <div className="flex gap-2 justify-center">
-                <Button
-                  size="sm"
-                  onClick={() => setShowCreateModal(true)}
-                >
-                  Create
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setShowJoinModal(true)}
-                >
-                  Join
-                </Button>
-              </div>
-            </Card>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center">
+              <p className="text-xs text-gray-400">No challenges yet</p>
+              <p className="text-xs text-gray-500 mt-1">Create or join one to get started!</p>
+            </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {challenges.map((challenge) => (
                 <ChallengeCard
                   key={challenge.id}
@@ -146,58 +154,53 @@ export function HomeScreen({
             </div>
           )}
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="bg-white border-t border-gray-200 p-4 flex gap-2">
-        <Button
-          className="flex-1"
-          onClick={() => setShowCreateModal(true)}
-        >
-          Create Challenge
-        </Button>
-        <Button
-          className="flex-1"
-          variant="secondary"
-          onClick={() => setShowJoinModal(true)}
-        >
-          Join Challenge
-        </Button>
-        {isAdmin && (
-          <Button
-            className="flex-1"
-            variant="secondary"
-            onClick={() => setShowAdminPanel(!showAdminPanel)}
-          >
-            🔧 Admin
-          </Button>
+        {/* Admin Panel */}
+        {isAdmin && showAdminPanel && (
+          <div className="bg-purple-900/20 border border-purple-700/30 rounded-lg p-3 mb-4">
+            <p className="text-xs font-semibold text-purple-300 mb-2">🔐 Admin Panel</p>
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {challenges.map((challenge) => (
+                <div
+                  key={challenge.id}
+                  className="flex items-center justify-between bg-slate-800/50 p-2 rounded text-xs border border-slate-700"
+                >
+                  <span className="truncate flex-1 text-gray-300">{challenge.name}</span>
+                  <button
+                    onClick={() => handleDeleteChallenge(challenge.id)}
+                    className="text-red-400 hover:text-red-300 ml-2 transition"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Admin Panel */}
-      {isAdmin && showAdminPanel && (
-        <div className="bg-orange-50 border-t border-orange-200 p-4 max-h-48 overflow-y-auto">
-          <p className="text-xs font-semibold text-orange-700 mb-2">Admin Panel - All Challenges</p>
-          <div className="space-y-1">
-            {challenges.map((challenge) => (
-              <div
-                key={challenge.id}
-                className="flex items-center justify-between bg-white p-2 rounded text-xs border border-orange-200"
-              >
-                <span className="truncate flex-1">{challenge.name}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteChallenge(challenge.id)}
-                  className="text-red-600 hover:text-red-700 ml-2"
-                >
-                  🗑️
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Footer Actions */}
+      <div className="bg-gradient-to-t from-slate-900 to-slate-800/50 border-t border-slate-700 p-3 space-y-2">
+        <button
+          onClick={openDashboard}
+          className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white text-xs font-semibold py-2 rounded transition flex items-center justify-center gap-2"
+        >
+          📊 Open Dashboard
+        </button>
+
+        {isAdmin && (
+          <button
+            onClick={() => setShowAdminPanel(!showAdminPanel)}
+            className={`w-full text-xs font-semibold py-1.5 rounded transition ${
+              showAdminPanel
+                ? 'bg-purple-600 text-white'
+                : 'bg-slate-700 hover:bg-slate-600 text-gray-200'
+            }`}
+          >
+            {showAdminPanel ? '✓ Admin Panel' : '🔐 Admin Panel'}
+          </button>
+        )}
+      </div>
 
       {/* Modals */}
       {auth.jwt && (
@@ -208,6 +211,7 @@ export function HomeScreen({
             onClose={() => setShowCreateModal(false)}
             onSuccess={() => {
               setRefreshKey((prev) => prev + 1);
+              setShowCreateModal(false);
             }}
           />
           <JoinChallengeModal
@@ -216,6 +220,7 @@ export function HomeScreen({
             onClose={() => setShowJoinModal(false)}
             onSuccess={() => {
               setRefreshKey((prev) => prev + 1);
+              setShowJoinModal(false);
             }}
           />
         </>

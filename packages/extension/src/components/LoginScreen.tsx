@@ -9,7 +9,6 @@ interface LoginScreenProps {
 
 export function LoginScreen({ onLoginSuccess, loading = false }: LoginScreenProps) {
   useEffect(() => {
-    // Listen for message from auth-success page
     const handleMessage = (
       message: any,
       sender: chrome.runtime.MessageSender,
@@ -28,35 +27,56 @@ export function LoginScreen({ onLoginSuccess, loading = false }: LoginScreenProp
   }, [onLoginSuccess]);
 
   const handleConnectStrava = () => {
-    // Open Strava OAuth in new tab
     chrome.tabs.create({
       url: 'https://strava-challenges-extension.vercel.app/api/auth/strava',
     });
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 to-white p-6">
-      <div className="text-center">
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-black p-6">
+      <div className="text-center max-w-xs">
         <div className="mb-6">
-          <div className="w-16 h-16 mx-auto bg-strava-orange rounded-full flex items-center justify-center text-white text-2xl font-bold">
-            SC
-          </div>
+          <div className="text-5xl mb-4">⚡</div>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            StravaChallenge
+          </h1>
+          <p className="text-sm text-gray-400">
+            Compete with friends on every climb
+          </p>
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Strava Challenge
-        </h1>
-        <p className="text-gray-600 mb-8">
-          Track challenges with your Strava friends
-        </p>
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 mb-6">
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <span className="text-lg">🏔️</span>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-white">Real-time Updates</p>
+                <p className="text-xs text-gray-400">Track efforts instantly</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-lg">👥</span>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-white">Group Leaderboards</p>
+                <p className="text-xs text-gray-400">Compete in real-time</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-lg">⚡</span>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-white">Auto-tracked</p>
+                <p className="text-xs text-gray-400">No manual logging</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <Button
           onClick={handleConnectStrava}
           disabled={loading}
-          className="w-full mb-4"
-          size="lg"
+          className="w-full mb-4 bg-orange-600 hover:bg-orange-700 text-white font-semibold"
         >
-          {loading ? 'Connecting...' : 'Connect with Strava'}
+          {loading ? 'Connecting...' : '🔗 Connect with Strava'}
         </Button>
 
         <p className="text-xs text-gray-500">

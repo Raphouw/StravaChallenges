@@ -66,10 +66,12 @@ function ChallengeGrid() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {challenges.map((challenge) => {
+      {challenges.map((challenge: any) => {
         const days = daysRemaining(challenge.ends_at)
         const progress = progressPercent(challenge.ends_at)
         const isEnded = days <= 0
+        const participantCount = challenge.participant_count || 0
+        const effortCount = challenge.effort_count || 0
 
         return (
           <a
@@ -107,9 +109,16 @@ function ChallengeGrid() {
                   />
                 </div>
 
-                {/* Stats */}
+                {/* Segment info */}
+                {challenge.segment && (
+                  <p className="text-xs text-orange-400 mb-3">
+                    🗻 {(challenge.segment.distance / 1000).toFixed(1)}km · {challenge.segment.elevation_gain}m D+
+                  </p>
+                )}
+
+                {/* Stats from API */}
                 <p className="text-xs text-gray-400 mb-4 flex-1">
-                  📊 {Math.floor(Math.random() * 20) + 1} participants · {Math.floor(Math.random() * 100) + 10} efforts
+                  👥 {participantCount} {participantCount === 1 ? 'participant' : 'participants'} · 💪 {effortCount} {effortCount === 1 ? 'effort' : 'efforts'}
                 </p>
 
                 {/* Invite code */}
