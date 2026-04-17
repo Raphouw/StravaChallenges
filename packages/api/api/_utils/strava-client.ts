@@ -41,6 +41,34 @@ export async function getStravaActivity(
   return response.json() as Promise<StravaActivity>;
 }
 
+export async function getStravaSegment(
+  segmentId: number,
+  accessToken: string
+): Promise<any> {
+  const response = await fetch(
+    `https://www.strava.com/api/v3/segments/${segmentId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Strava segment fetch failed: ${response.status}`);
+  }
+
+  const segment = await response.json() as any;
+  console.log('[strava-client] segment raw keys:', Object.keys(segment));
+  console.log('[strava-client] elevation fields:', {
+    total_elevation_gain: segment.total_elevation_gain,
+    elevation_high: segment.elevation_high,
+    elevation_low: segment.elevation_low,
+  });
+
+  return segment;
+}
+
 export async function refreshStravaToken(
   refreshToken: string
 ): Promise<{

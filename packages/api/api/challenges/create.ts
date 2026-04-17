@@ -2,7 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { supabase, User } from '../_utils/supabase.js';
 import { verifyJWT } from '../_utils/jwt.js';
 import { decryptToken, encryptToken } from '../_utils/crypto.js';
-import { refreshStravaToken } from '../_utils/strava-client.js';
+import { refreshStravaToken, getStravaSegment } from '../_utils/strava-client.js';
 
 interface CreateChallengeBody {
   name: string;
@@ -225,24 +225,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       }
 
       const decryptedToken = decryptToken(accessToken);
-      const segmentResponse = await fetch(
-        `https://www.strava.com/api/v3/segments/${segment_id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${decryptedToken}`,
-          },
-        }
-      );
-
-      if (segmentResponse.ok) {
-        const segmentData = await segmentResponse.json() as any;
-        console.log('Strava segment raw:', JSON.stringify(segmentData));
-        segmentName = segmentData.name || '';
-        segmentDistance = segmentData.distance || 0;
-        segmentElevation = segmentData.total_elevation_gain || 0;
-        console.log('distance meters:', segmentDistance);
-        console.log('elevation gain:', segmentElevation);
-      }
+      const segmentData = await getStravaSegment(segment_id, decryptedToken);
+      segmentName = segmentData.name || '';
+      segmentDistance = segmentData.distance || 0;
+      segmentElevation = segmentData.total_elevation_gain || 0;
     } catch (error) {
       console.error('Failed to fetch segment details from Strava:', error);
     }
