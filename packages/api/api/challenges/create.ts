@@ -49,7 +49,7 @@ async function runBackfill(
 
     const { data: segments } = await supabase
       .from('challenge_segments')
-      .select('strava_segment_id')
+      .select('id, strava_segment_id')
       .eq('challenge_id', challengeId);
 
     if (!segments) {
@@ -57,7 +57,7 @@ async function runBackfill(
       return;
     }
 
-    const segmentIds = new Set(segments.map(s => s.strava_segment_id));
+    const segmentMap = new Map(segments.map(s => [s.strava_segment_id, s.id]));
 
     for (const activity of activities) {
       try {
@@ -74,21 +74,21 @@ async function runBackfill(
 
         if (activityDetail.segment_efforts && Array.isArray(activityDetail.segment_efforts)) {
           for (const effort of activityDetail.segment_efforts) {
-            if (segmentIds.has(effort.segment.id)) {
+            const challengeSegmentId = segmentMap.get(effort.segment.id);
+            if (challengeSegmentId) {
               const { error: insertError } = await supabase
                 .from('segment_efforts')
                 .insert({
                   challenge_id: challengeId,
+                  challenge_segment_id: challengeSegmentId,
                   user_id: userData.id,
+                  strava_activity_id: activity.id,
                   strava_effort_id: effort.id,
                   elapsed_time: effort.elapsed_time,
                   moving_time: effort.moving_time,
+                  start_date: effort.start_date,
                   distance: effort.distance,
                   elevation_gain: effort.elevation_gain,
-                  start_date: effort.start_date,
-                  start_date_local: effort.start_date_local,
-                  pr_rank: effort.pr_rank,
-                  kom_rank: effort.kom_rank,
                 });
 
               if (insertError && insertError.code !== '23505') {
