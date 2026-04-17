@@ -28,7 +28,7 @@ export function LoginScreen({ onLoginSuccess, loading = false }: LoginScreenProp
 
   const handleConnectStrava = () => {
     chrome.tabs.create({
-      url: 'https://strava-challenges-dashboard.vercel.app/api/auth/strava',
+      url: 'https://strava-challenges-extension.vercel.app/api/auth/strava',
     });
   };
 

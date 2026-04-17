@@ -39,7 +39,7 @@ export function HomeScreen({
 
     try {
       const response = await fetch(
-        'https://strava-challenges-dashboard.vercel.app/api/challenges/delete',
+        'https://strava-challenges-extension.vercel.app/api/challenges/delete',
         {
           method: 'DELETE',
           headers: {
@@ -62,10 +62,7 @@ export function HomeScreen({
   };
 
   const openDashboard = () => {
-    let dashboardUrl = 'https://strava-challenges-dashboard.vercel.app/';
-    if (isAdmin) {
-      dashboardUrl += '?admin=465786453sd4fsdfsdfsdf456';
-    }
+    const dashboardUrl = 'https://strava-challenges-extension.vercel.app';
     chrome.tabs.create({ url: dashboardUrl });
   };
 

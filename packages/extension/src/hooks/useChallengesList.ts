@@ -20,7 +20,7 @@ export function useChallengesList(jwt: string | null, refetchKey: number = 0) {
     async function fetchChallenges() {
       setLoading(true);
       try {
-        const response = await fetch('https://strava-challenges-dashboard.vercel.app/api/challenges/list', {
+        const response = await fetch('https://strava-challenges-extension.vercel.app/api/challenges/list', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${jwt}`,

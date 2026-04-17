@@ -24,7 +24,7 @@ function ChallengeGrid() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('https://strava-challenges-dashboard.vercel.app/api/challenges/list-public', {
+    fetch('https://strava-challenges-extension.vercel.app/api/challenges/list-public', {
       cache: 'no-store'
     })
       .then(r => r.json())

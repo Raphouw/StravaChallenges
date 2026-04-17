@@ -26,7 +26,7 @@ export function JoinChallengeModal({
     setError(null);
 
     try {
-      const response = await fetch('https://strava-challenges-dashboard.vercel.app/api/challenges/join', {
+      const response = await fetch('https://strava-challenges-extension.vercel.app/api/challenges/join', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${jwt}`,

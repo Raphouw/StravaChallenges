@@ -15,7 +15,7 @@ interface CreateChallengeBody {
 async function triggerBackfill(challengeId: string, jwt: string): Promise<void> {
   try {
     await fetch(
-      `${process.env.API_URL || 'https://strava-challenges-dashboard.vercel.app'}/api/challenges/backfill`,
+      `${process.env.API_URL || 'https://strava-challenges-extension.vercel.app'}/api/challenges/backfill`,
       {
         method: 'POST',
         headers: {
