@@ -10,6 +10,7 @@ interface CreateChallengeBody {
   segment_id: number;
   starts_at: string;
   ends_at: string;
+  is_public?: boolean;
 }
 
 async function runBackfill(
@@ -88,7 +89,7 @@ async function runBackfill(
                   moving_time: effort.moving_time,
                   start_date: effort.start_date,
                   distance: effort.distance,
-                  elevation_gain: effort.elevation || 0,
+                  elevation_gain: effort.elevation_gain || 0,
                 });
 
               if (insertError && insertError.code !== '23505') {
@@ -107,6 +108,7 @@ async function runBackfill(
     console.error('Backfill error:', error);
   }
 }
+// Keep runBackfill for potential internal use but primary path uses the backfill endpoint
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -134,7 +136,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   try {
     const payload = verifyJWT(jwt);
 
-    const { name, type, segment_id, starts_at, ends_at } = req.body as CreateChallengeBody;
+    const { name, type, segment_id, starts_at, ends_at, is_public = true } = req.body as CreateChallengeBody;
 
     if (!name || !type || !segment_id || !starts_at || !ends_at) {
       res.status(400).json({ error: 'Missing required fields' });
@@ -171,6 +173,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         owner_id: payload.userId,
         starts_at,
         ends_at,
+        is_public,
       })
       .select('id')
       .single();
@@ -285,9 +288,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     const now = new Date();
     if (new Date(starts_at) < now) {
-      console.log('Starting background backfill for challenge', challenge.id);
-      runBackfill(challenge.id, user as User, starts_at).catch((err: any) => {
-        console.error('Background backfill failed:', err);
+      const apiUrl = process.env.API_URL || 'https://strava-challenges-extension.vercel.app';
+      console.log('Triggering backfill endpoint for challenge', challenge.id);
+      fetch(`${apiUrl}/api/challenges/backfill`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ challengeId: challenge.id }),
+      }).catch((err: any) => {
+        console.error('Failed to trigger backfill endpoint:', err);
       });
     }
   } catch (error) {

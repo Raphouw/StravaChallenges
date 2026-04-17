@@ -28,21 +28,50 @@ export default async function handleJoin(req: VercelRequest, res: VercelResponse
   try {
     const payload = verifyJWT(jwt);
 
-    const { invite_code, code } = req.body as any;
+    const { invite_code, code, challenge_id } = req.body as any;
     const challengeCode = (invite_code || code || '').toUpperCase();
 
-    if (!challengeCode) {
-      res.status(400).json({ error: 'Missing challenge code' });
-      return;
+    let challenge: { id: string; owner_id: string } | null = null;
+
+    if (challenge_id) {
+      const { data: foundChallenge, error: findError } = await supabase
+        .from('challenges')
+        .select('id, owner_id, is_public')
+        .eq('id', challenge_id)
+        .single();
+
+      if (findError || !foundChallenge) {
+        res.status(404).json({ error: 'Challenge not found' });
+        return;
+      }
+
+      if (!foundChallenge.is_public) {
+        res.status(403).json({ error: 'This challenge requires an invite code' });
+        return;
+      }
+
+      challenge = foundChallenge;
+    } else {
+      if (!challengeCode) {
+        res.status(400).json({ error: 'Missing challenge code or challenge_id' });
+        return;
+      }
+
+      const { data: foundChallenge, error: findError } = await supabase
+        .from('challenges')
+        .select('id, owner_id')
+        .eq('invite_code', challengeCode)
+        .single();
+
+      if (findError || !foundChallenge) {
+        res.status(404).json({ error: 'Challenge not found' });
+        return;
+      }
+
+      challenge = foundChallenge;
     }
 
-    const { data: challenge, error: findError } = await supabase
-      .from('challenges')
-      .select('id, owner_id')
-      .eq('invite_code', challengeCode)
-      .single();
-
-    if (findError || !challenge) {
+    if (!challenge) {
       res.status(404).json({ error: 'Challenge not found' });
       return;
     }

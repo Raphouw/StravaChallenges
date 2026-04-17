@@ -24,22 +24,22 @@ function App() {
 
   if (auth.loading) {
     return (
-      <div className="w-popup h-popup flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500">Loading...</p>
+      <div className="flex items-center justify-center" style={{ width: 420, minHeight: 540, background: '#0a0a0f' }}>
+        <p className="text-slate-400 text-sm">Loading...</p>
       </div>
     );
   }
 
   if (auth.error) {
     return (
-      <div className="w-popup h-popup flex items-center justify-center bg-gray-50 p-4">
-        <p className="text-red-600 text-center">Error: {auth.error}</p>
+      <div className="flex items-center justify-center p-4" style={{ width: 420, minHeight: 540, background: '#0a0a0f' }}>
+        <p className="text-red-400 text-center text-sm">Error: {auth.error}</p>
       </div>
     );
   }
 
   return (
-    <div className="w-popup h-popup overflow-hidden bg-white">
+    <div className="overflow-hidden" style={{ width: 420, minHeight: 540, background: '#0a0a0f' }}>
       {!auth.jwt || !auth.user ? (
         <LoginScreen onLoginSuccess={handleLoginSuccess} />
       ) : (
