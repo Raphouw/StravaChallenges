@@ -111,20 +111,28 @@ async function backfillChallengeActivities(
           console.log(`[backfill] activity ${activity.id} has ${matchingEfforts.length} matching efforts`);
 
           for (const effort of matchingEfforts) {
+            const { data: segmentData } = await supabase
+              .from('challenge_segments')
+              .select('id')
+              .eq('challenge_id', challengeId)
+              .eq('strava_segment_id', effort.segment.id)
+              .single();
+
             const { error: insertError } = await supabase
               .from('segment_efforts')
               .insert({
                 challenge_id: challengeId,
+                challenge_segment_id: segmentData?.id,
                 user_id: userId,
+                strava_activity_id: activity.id,
                 strava_effort_id: effort.id,
                 elapsed_time: effort.elapsed_time,
                 moving_time: effort.moving_time,
+                start_date: effort.start_date,
                 distance: effort.distance,
                 elevation_gain: effort.elevation_gain,
-                start_date: effort.start_date,
-                start_date_local: effort.start_date_local,
-                pr_rank: effort.pr_rank,
-                kom_rank: effort.kom_rank,
+                average_watts: effort.average_watts,
+                average_cadence: effort.average_cadence,
               });
 
             if (insertError && insertError.code !== '23505') {

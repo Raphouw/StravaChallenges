@@ -103,7 +103,7 @@ export function CreateChallengeModal({
             body: JSON.stringify({ challengeId: data.id }),
           });
         } catch (err) {
-          console.error('Backfill failed:', err);
+          console.warn('[modal] backfill failed, continuing anyway:', err);
         }
         setError(null);
       }
@@ -113,9 +113,11 @@ export function CreateChallengeModal({
     } catch (err) {
       console.error('Failed to create challenge:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
       setLoading(false);
+      return;
     }
+
+    setLoading(false);
   };
 
   return (

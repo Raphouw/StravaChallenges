@@ -90,6 +90,8 @@ async function runBackfill(
                   start_date: effort.start_date,
                   distance: effort.distance,
                   elevation_gain: effort.elevation_gain || 0,
+                  average_watts: effort.average_watts,
+                  average_cadence: effort.average_cadence,
                 });
 
               if (insertError && insertError.code !== '23505') {
