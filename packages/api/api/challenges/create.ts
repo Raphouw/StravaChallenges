@@ -228,7 +228,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       const segmentData = await getStravaSegment(segment_id, decryptedToken);
       segmentName = segmentData.name || '';
       segmentDistance = segmentData.distance || 0;
-      segmentElevation = segmentData.total_elevation_gain || 0;
+      segmentElevation = segmentData.total_elevation_gain > 0
+        ? segmentData.total_elevation_gain
+        : Math.max(0, (segmentData.elevation_high ?? 0) - (segmentData.elevation_low ?? 0));
     } catch (error) {
       console.error('Failed to fetch segment details from Strava:', error);
     }

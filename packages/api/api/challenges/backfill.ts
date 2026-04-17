@@ -83,10 +83,14 @@ async function backfillChallengeActivities(
     }
 
     const segmentIds = new Set(segments.map(s => s.strava_segment_id));
+    console.log(`[backfill] found ${segments.length} challenge segments for user ${userId}`);
+
+    let effortsInserted = 0;
 
     // Process each activity
     for (const activity of activities) {
       try {
+        console.log(`[backfill] fetching detail for activity ${activity.id}`);
         const detailResponse = await fetch(
           `https://www.strava.com/api/v3/activities/${activity.id}`,
           {
@@ -94,44 +98,50 @@ async function backfillChallengeActivities(
           }
         );
 
-        if (!detailResponse.ok) continue;
+        if (!detailResponse.ok) {
+          console.warn(`[backfill] activity ${activity.id} detail fetch failed`);
+          continue;
+        }
 
         const activityDetail = (await detailResponse.json()) as any;
 
         // Process segment efforts
         if (activityDetail.segment_efforts && Array.isArray(activityDetail.segment_efforts)) {
-          for (const effort of activityDetail.segment_efforts) {
-            if (segmentIds.has(effort.segment.id)) {
-              const { error: insertError } = await supabase
-                .from('segment_efforts')
-                .insert({
-                  challenge_id: challengeId,
-                  user_id: userId,
-                  strava_effort_id: effort.id,
-                  elapsed_time: effort.elapsed_time,
-                  moving_time: effort.moving_time,
-                  distance: effort.distance,
-                  elevation_gain: effort.elevation_gain,
-                  start_date: effort.start_date,
-                  start_date_local: effort.start_date_local,
-                  pr_rank: effort.pr_rank,
-                  kom_rank: effort.kom_rank,
-                });
+          const matchingEfforts = activityDetail.segment_efforts.filter((e: any) => segmentIds.has(e.segment.id));
+          console.log(`[backfill] activity ${activity.id} has ${matchingEfforts.length} matching efforts`);
 
-              if (insertError && insertError.code !== '23505') {
-                // 23505 is unique constraint violation (duplicate)
-                console.error(`Failed to insert effort ${effort.id}:`, insertError);
-              }
+          for (const effort of matchingEfforts) {
+            const { error: insertError } = await supabase
+              .from('segment_efforts')
+              .insert({
+                challenge_id: challengeId,
+                user_id: userId,
+                strava_effort_id: effort.id,
+                elapsed_time: effort.elapsed_time,
+                moving_time: effort.moving_time,
+                distance: effort.distance,
+                elevation_gain: effort.elevation_gain,
+                start_date: effort.start_date,
+                start_date_local: effort.start_date_local,
+                pr_rank: effort.pr_rank,
+                kom_rank: effort.kom_rank,
+              });
+
+            if (insertError && insertError.code !== '23505') {
+              // 23505 is unique constraint violation (duplicate)
+              console.error(`[backfill] failed to insert effort ${effort.id}:`, insertError);
+            } else if (!insertError) {
+              effortsInserted++;
             }
           }
         }
       } catch (error) {
-        console.error(`Failed to process activity ${activity.id}:`, error);
+        console.error(`[backfill] failed to process activity ${activity.id}:`, error);
         continue;
       }
     }
 
-    console.log(`Backfill completed for user ${userId} in challenge ${challengeId}`);
+    console.log(`[backfill] completed for user ${userId}, inserted ${effortsInserted} efforts`);
   } catch (error) {
     console.error(`Backfill error for user ${userId}:`, error);
   }
@@ -196,22 +206,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       return;
     }
 
-    // Fire and forget - respond immediately
-    res.status(202).json({ message: 'Backfill started' });
+    console.log('[backfill] starting backfill for', members?.length || 0, 'members');
 
-    console.log('[backfill] starting background tasks for', members?.length || 0, 'members');
+    let totalEffortsInserted = 0;
 
-    // Process each member in background
+    // Process each member synchronously
     for (const member of members) {
-      backfillChallengeActivities(
-        challengeId,
-        member.user_id,
-        jwt,
-        challenge.starts_at
-      ).catch((err) => {
+      try {
+        await backfillChallengeActivities(
+          challengeId,
+          member.user_id,
+          jwt,
+          challenge.starts_at
+        );
+        console.log(`[backfill] completed for member ${member.user_id}`);
+      } catch (err) {
         console.error(`[backfill] failed for member ${member.user_id}:`, err);
-      });
+      }
     }
+
+    console.log('[backfill] all members processed');
+    res.status(200).json({ message: 'Backfill complete', members_processed: members?.length || 0 });
   } catch (error) {
     console.error('Backfill handler error:', error);
     res.status(401).json({ error: 'Invalid JWT token' });

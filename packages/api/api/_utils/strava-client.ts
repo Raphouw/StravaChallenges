@@ -66,7 +66,15 @@ export async function getStravaSegment(
     elevation_low: segment.elevation_low,
   });
 
-  return segment;
+  // Fallback: use elevation_high - elevation_low if total_elevation_gain is 0
+  const elevationGain = segment.total_elevation_gain > 0
+    ? segment.total_elevation_gain
+    : Math.max(0, (segment.elevation_high ?? 0) - (segment.elevation_low ?? 0));
+
+  return {
+    ...segment,
+    total_elevation_gain: elevationGain,
+  };
 }
 
 export async function refreshStravaToken(
