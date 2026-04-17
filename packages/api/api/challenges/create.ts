@@ -13,6 +13,31 @@ interface CreateChallengeBody {
   is_public?: boolean;
 }
 
+async function fetchAllActivities(accessToken: string, since: Date): Promise<any[]> {
+  const allActivities: any[] = [];
+  let page = 1;
+  const perPage = 200;
+
+  while (true) {
+    const res = await fetch(
+      `https://www.strava.com/api/v3/athlete/activities?after=${Math.floor(since.getTime() / 1000)}&per_page=${perPage}&page=${page}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (!res.ok) break;
+
+    const activities = (await res.json()) as any[];
+    if (!Array.isArray(activities) || activities.length === 0) break;
+
+    allActivities.push(...activities);
+
+    if (activities.length < perPage) break;
+    page++;
+  }
+
+  return allActivities;
+}
+
 async function runBackfill(
   challengeId: string,
   user: User,
@@ -32,21 +57,9 @@ async function runBackfill(
     }
 
     const decryptedToken = decryptToken(accessToken);
-    const unixTimestamp = Math.floor(new Date(startDate).getTime() / 1000);
+    const startDateObj = new Date(startDate);
 
-    const activitiesResponse = await fetch(
-      `https://www.strava.com/api/v3/athlete/activities?after=${unixTimestamp}&per_page=50`,
-      {
-        headers: { Authorization: `Bearer ${decryptedToken}` },
-      }
-    );
-
-    if (!activitiesResponse.ok) {
-      console.error('Failed to fetch activities for backfill');
-      return;
-    }
-
-    const activities = (await activitiesResponse.json()) as any[];
+    const activities = await fetchAllActivities(decryptedToken, startDateObj);
 
     const { data: segments } = await supabase
       .from('challenge_segments')
@@ -89,9 +102,9 @@ async function runBackfill(
                   moving_time: effort.moving_time,
                   start_date: effort.start_date,
                   distance: effort.distance,
-                  elevation_gain: effort.elevation_gain || 0,
-                  average_watts: effort.average_watts,
-                  average_cadence: effort.average_cadence,
+                  elevation_gain: effort.total_elevation_gain ?? effort.elevation_gain ?? 0,
+                  average_watts: effort.average_watts ?? null,
+                  average_cadence: effort.average_cadence ?? null,
                 });
 
               if (insertError && insertError.code !== '23505') {

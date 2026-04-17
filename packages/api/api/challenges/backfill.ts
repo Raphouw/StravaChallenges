@@ -8,6 +8,36 @@ interface BackfillRequest {
   challengeId: string;
 }
 
+async function fetchAllActivities(accessToken: string, since: Date): Promise<any[]> {
+  const allActivities: any[] = [];
+  let page = 1;
+  const perPage = 200;
+
+  while (true) {
+    console.log(`[backfill] fetching activities page ${page}...`);
+    const res = await fetch(
+      `https://www.strava.com/api/v3/athlete/activities?after=${Math.floor(since.getTime() / 1000)}&per_page=${perPage}&page=${page}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (!res.ok) {
+      console.error(`[backfill] page ${page} fetch failed: ${res.status}`);
+      break;
+    }
+
+    const activities = (await res.json()) as any[];
+    if (!Array.isArray(activities) || activities.length === 0) break;
+
+    allActivities.push(...activities);
+    console.log(`[backfill] page ${page}: ${activities.length} activities (total: ${allActivities.length})`);
+
+    if (activities.length < perPage) break;
+    page++;
+  }
+
+  return allActivities;
+}
+
 async function backfillChallengeActivities(
   challengeId: string,
   userId: string,
@@ -51,25 +81,11 @@ async function backfillChallengeActivities(
 
     const decryptedToken = decryptToken(accessToken);
     const startDate = new Date(startsAt);
-    const unixTimestamp = Math.floor(startDate.getTime() / 1000);
 
-    console.log(`[backfill] fetching activities for user ${userId} since ${new Date(unixTimestamp * 1000).toISOString()}`);
+    console.log(`[backfill] fetching activities for user ${userId} since ${startDate.toISOString()}`);
 
-    // Fetch all activities since challenge start
-    const activitiesResponse = await fetch(
-      `https://www.strava.com/api/v3/athlete/activities?after=${unixTimestamp}&per_page=100`,
-      {
-        headers: { Authorization: `Bearer ${decryptedToken}` },
-      }
-    );
-
-    if (!activitiesResponse.ok) {
-      console.error(`[backfill] failed to fetch activities for user ${userId}`);
-      return;
-    }
-
-    const activities = (await activitiesResponse.json()) as any[];
-    console.log(`[backfill] found ${activities.length} activities for user ${userId}`);
+    const activities = await fetchAllActivities(decryptedToken, startDate);
+    console.log(`[backfill] found ${activities.length} total activities for user ${userId}`);
 
     // Get challenge segments
     const { data: segments, error: segmentError } = await supabase
@@ -111,6 +127,17 @@ async function backfillChallengeActivities(
           console.log(`[backfill] activity ${activity.id} has ${matchingEfforts.length} matching efforts`);
 
           for (const effort of matchingEfforts) {
+            console.log('[backfill] effort raw fields:', {
+              elapsed_time: effort.elapsed_time,
+              moving_time: effort.moving_time,
+              start_date: effort.start_date,
+              distance: effort.distance,
+              elevation_gain: effort.elevation_gain,
+              total_elevation_gain: effort.total_elevation_gain,
+              average_watts: effort.average_watts,
+              average_cadence: effort.average_cadence,
+            });
+
             const { data: segmentData } = await supabase
               .from('challenge_segments')
               .select('id')
@@ -130,9 +157,9 @@ async function backfillChallengeActivities(
                 moving_time: effort.moving_time,
                 start_date: effort.start_date,
                 distance: effort.distance,
-                elevation_gain: effort.elevation_gain,
-                average_watts: effort.average_watts,
-                average_cadence: effort.average_cadence,
+                elevation_gain: effort.total_elevation_gain ?? effort.elevation_gain ?? 0,
+                average_watts: effort.average_watts ?? null,
+                average_cadence: effort.average_cadence ?? null,
               });
 
             if (insertError && insertError.code !== '23505') {
