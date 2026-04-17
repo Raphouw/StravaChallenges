@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card } from '../shared/index.js';
+import { Button } from '../shared/index.js';
 
 interface SuccessModalProps {
   isOpen: boolean;
@@ -27,19 +27,19 @@ export function SuccessModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-80 text-center">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+      <div className="w-80 text-center bg-slate-900 border border-slate-700 rounded-lg p-6">
         <div className="mb-6">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">✓</span>
+          <div className="w-16 h-16 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-600/30">
+            <span className="text-3xl text-green-400">✓</span>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-          <p className="text-sm text-gray-600">{message}</p>
+          <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+          <p className="text-sm text-gray-400">{message}</p>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <p className="text-xs text-gray-500 mb-2">Invitation Code</p>
-          <p className="text-3xl font-mono font-bold text-orange-600 tracking-widest mb-3">
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-6">
+          <p className="text-xs text-gray-400 mb-2">Invitation Code</p>
+          <p className="text-3xl font-mono font-bold text-orange-400 tracking-widest mb-3">
             {code}
           </p>
           <Button
@@ -58,7 +58,7 @@ export function SuccessModal({
         >
           Close
         </Button>
-      </Card>
+      </div>
     </div>
   );
 }
