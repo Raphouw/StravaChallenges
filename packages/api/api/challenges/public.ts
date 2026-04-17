@@ -130,7 +130,7 @@ export default async function handlePublic(req: VercelRequest, res: VercelRespon
           user_name: user?.name || 'Unknown',
           user_profile_pic: user?.profile_pic_url || '',
           effort_count: stats.effort_count,
-          total_distance: Math.round(stats.total_distance * 10) / 10,
+          total_distance: Math.round(stats.total_distance / 1000 * 10) / 10,
           total_elevation: Math.round(stats.total_elevation),
           total_moving_time: stats.total_moving_time,
           score: stats.score,

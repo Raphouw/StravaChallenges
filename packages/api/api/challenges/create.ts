@@ -88,7 +88,7 @@ async function runBackfill(
                   moving_time: effort.moving_time,
                   start_date: effort.start_date,
                   distance: effort.distance,
-                  elevation_gain: effort.elevation_gain,
+                  elevation_gain: effort.elevation || 0,
                 });
 
               if (insertError && insertError.code !== '23505') {
@@ -274,17 +274,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       return;
     }
 
-    const now = new Date();
-    console.log('starts_at:', starts_at);
-    console.log('now:', now.toISOString());
-    console.log('should backfill:', new Date(starts_at) < now);
-    if (new Date(starts_at) < now) {
-      console.log('Running backfill for challenge', challenge.id);
-      await runBackfill(challenge.id, user as User, starts_at).catch((err: any) => {
-        console.error('Backfill failed:', err);
-      });
-    }
-
     res.status(201).json({
       id: challenge.id,
       invite_code,
@@ -293,6 +282,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       starts_at,
       ends_at,
     });
+
+    const now = new Date();
+    if (new Date(starts_at) < now) {
+      console.log('Starting background backfill for challenge', challenge.id);
+      runBackfill(challenge.id, user as User, starts_at).catch((err: any) => {
+        console.error('Background backfill failed:', err);
+      });
+    }
   } catch (error) {
     console.error('Failed to create challenge:', error);
     res.status(401).json({ error: 'Invalid JWT token' });

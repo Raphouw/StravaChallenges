@@ -233,7 +233,7 @@ export default async function handleLeaderboard(req: VercelRequest, res: VercelR
           user_name: user?.name || 'Unknown',
           user_profile_pic: user?.profile_pic_url || '',
           effort_count: stats.effort_count,
-          total_distance: Math.round(stats.total_distance * 10) / 10,
+          total_distance: Math.round(stats.total_distance / 1000 * 10) / 10,
           total_elevation: Math.round(stats.total_elevation),
           total_moving_time: stats.total_moving_time,
           score: stats.score,
@@ -273,9 +273,7 @@ export default async function handleLeaderboard(req: VercelRequest, res: VercelR
       entries: leaderboard,
       totals: {
         total_attempts: leaderboard.reduce((sum, e) => sum + e.effort_count, 0),
-        total_distance: Math.round(
-          leaderboard.reduce((sum, e) => sum + e.total_distance, 0) * 10
-        ) / 10,
+        total_distance: leaderboard.reduce((sum, e) => sum + e.total_distance, 0),
         total_elevation: Math.round(
           leaderboard.reduce((sum, e) => sum + e.total_elevation, 0)
         ),

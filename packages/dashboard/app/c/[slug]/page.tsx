@@ -139,6 +139,21 @@ function ChallengeDetail() {
               )}
             </p>
 
+            <div className="flex flex-wrap gap-4 text-sm text-gray-400 mb-8">
+              <div>
+                <span className="text-gray-500">Starts:</span> {new Date(challenge.starts_at).toLocaleDateString('en-US')}
+              </div>
+              <div>
+                <span className="text-gray-500">Ends:</span> {new Date(challenge.ends_at).toLocaleDateString('en-US')}
+              </div>
+              <div>
+                <span className="text-gray-500">Type:</span> 
+                <span className="text-orange-400 font-semibold ml-1">
+                  {challenge.type === 'count' ? '🔢 Count' : challenge.type === 'time' ? '⏱️ Time' : '⬆️ Elevation'}
+                </span>
+              </div>
+            </div>
+
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <StatCard icon="👥" label="Participants" value={leaderboard.length} />
