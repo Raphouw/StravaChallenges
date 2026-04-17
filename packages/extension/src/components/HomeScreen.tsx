@@ -62,7 +62,10 @@ export function HomeScreen({
   };
 
   const openDashboard = () => {
-    const dashboardUrl = 'https://strava-challenges-extension.vercel.app';
+    let dashboardUrl = 'https://strava-challenges-dashboard.vercel.app/';
+    if (isAdmin) {
+      dashboardUrl += '?admin=465786453sd4fsdfsdfsdf456';
+    }
     chrome.tabs.create({ url: dashboardUrl });
   };
 
