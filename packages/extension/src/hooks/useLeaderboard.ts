@@ -54,7 +54,7 @@ export function useLeaderboard(challengeId: string | null, jwt: string | null) {
     async function fetchLeaderboard() {
       setLoading(true);
       try {
-        const url = `https://strava-challenges-extension.vercel.app/api/challenges/leaderboard?id=${challengeId}`;
+        const url = `https://strava-challenges-dashboard.vercel.app/api/challenges/leaderboard?id=${challengeId}`;
 
         const response = await fetch(url, {
           method: 'GET',

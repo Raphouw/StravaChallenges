@@ -6,7 +6,7 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  const redirectUri = `https://strava-challenges-extension.vercel.app/api/auth/callback`;
+  const redirectUri = `https://strava-challenges-dashboard.vercel.app/api/auth/callback`;
 
   const params = new URLSearchParams({
     client_id: STRAVA_CLIENT_ID,

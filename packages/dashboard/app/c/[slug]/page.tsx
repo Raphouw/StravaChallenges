@@ -21,7 +21,7 @@ function ChallengeDetail() {
   useEffect(() => {
     if (!slug) return
     fetch(
-      `https://strava-challenges-extension.vercel.app/api/challenges/public?slug=${slug}`,
+      `https://strava-challenges-dashboard.vercel.app/api/challenges/public?slug=${slug}`,
       { cache: 'no-store' }
     )
       .then(r => r.json())
@@ -69,7 +69,7 @@ function ChallengeDetail() {
     setIsDeleting(true)
     try {
       const res = await fetch(
-        'https://strava-challenges-extension.vercel.app/api/challenges/delete',
+        'https://strava-challenges-dashboard.vercel.app/api/challenges/delete',
         {
           method: 'DELETE',
           headers: {

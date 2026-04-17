@@ -1,4 +1,4 @@
-const API_BASE = 'https://strava-challenges-extension.vercel.app';
+const API_BASE = 'https://strava-challenges-dashboard.vercel.app';
 
 export async function fetchAPI<T>(
   endpoint: string,

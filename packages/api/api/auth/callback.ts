@@ -29,7 +29,7 @@ export default async function handler(
   if (error) {
     const errorMessage = `${error}: ${error_description || 'Unknown error'}`;
     res.redirect(
-      `https://strava-challenges-extension.vercel.app/auth-error?message=${encodeURIComponent(errorMessage)}`
+      `https://strava-challenges-dashboard.vercel.app/auth-error?message=${encodeURIComponent(errorMessage)}`
     );
     return;
   }
@@ -112,7 +112,7 @@ export default async function handler(
 
     const jwtToken = generateJWT(userId, tokenData.athlete.id);
     const userName = `${tokenData.athlete.firstname} ${tokenData.athlete.lastname}`;
-    const redirectUrl = `https://strava-challenges-extension.vercel.app/auth-success?token=${encodeURIComponent(jwtToken)}&userId=${encodeURIComponent(userId)}&name=${encodeURIComponent(userName)}&profileUrl=${encodeURIComponent(tokenData.athlete.profile_medium)}&stravaId=${encodeURIComponent(tokenData.athlete.id.toString())}`;
+    const redirectUrl = `https://strava-challenges-dashboard.vercel.app/auth-success?token=${encodeURIComponent(jwtToken)}&userId=${encodeURIComponent(userId)}&name=${encodeURIComponent(userName)}&profileUrl=${encodeURIComponent(tokenData.athlete.profile_medium)}&stravaId=${encodeURIComponent(tokenData.athlete.id.toString())}`;
 
     res.redirect(redirectUrl);
   } catch (error) {

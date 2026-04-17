@@ -15,7 +15,7 @@ export function useUserProfile(jwt: string | null) {
     async function fetchUser() {
       setLoading(true);
       try {
-        const response = await fetch('https://strava-challenges-extension.vercel.app/api/user/me', {
+        const response = await fetch('https://strava-challenges-dashboard.vercel.app/api/user/me', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${jwt}`,

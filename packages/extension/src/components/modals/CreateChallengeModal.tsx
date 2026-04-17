@@ -67,7 +67,7 @@ export function CreateChallengeModal({
     }
 
     try {
-      const response = await fetch('https://strava-challenges-extension.vercel.app/api/challenges/create', {
+      const response = await fetch('https://strava-challenges-dashboard.vercel.app/api/challenges/create', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${jwt}`,
