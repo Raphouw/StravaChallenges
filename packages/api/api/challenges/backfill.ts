@@ -53,6 +53,8 @@ async function backfillChallengeActivities(
     const startDate = new Date(startsAt);
     const unixTimestamp = Math.floor(startDate.getTime() / 1000);
 
+    console.log(`[backfill] fetching activities for user ${userId} since ${new Date(unixTimestamp * 1000).toISOString()}`);
+
     // Fetch all activities since challenge start
     const activitiesResponse = await fetch(
       `https://www.strava.com/api/v3/athlete/activities?after=${unixTimestamp}&per_page=100`,
@@ -62,11 +64,12 @@ async function backfillChallengeActivities(
     );
 
     if (!activitiesResponse.ok) {
-      console.error(`Failed to fetch activities for user ${userId}`);
+      console.error(`[backfill] failed to fetch activities for user ${userId}`);
       return;
     }
 
     const activities = (await activitiesResponse.json()) as any[];
+    console.log(`[backfill] found ${activities.length} activities for user ${userId}`);
 
     // Get challenge segments
     const { data: segments, error: segmentError } = await supabase
@@ -152,6 +155,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     const payload = verifyJWT(jwt);
     const { challengeId } = req.body as BackfillRequest;
 
+    console.log('[backfill] called for challenge:', challengeId);
+
     if (!challengeId) {
       res.status(400).json({ error: 'Missing challengeId' });
       return;
@@ -163,6 +168,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       .select('id, starts_at')
       .eq('id', challengeId)
       .single();
+
+    console.log('[backfill] challenge found:', challenge?.id);
 
     if (challengeError || !challenge) {
       res.status(404).json({ error: 'Challenge not found' });
@@ -183,6 +190,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     // Fire and forget - respond immediately
     res.status(202).json({ message: 'Backfill started' });
 
+    console.log('[backfill] starting background tasks for', members?.length || 0, 'members');
+
     // Process each member in background
     for (const member of members) {
       backfillChallengeActivities(
@@ -191,7 +200,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         jwt,
         challenge.starts_at
       ).catch((err) => {
-        console.error(`Backfill failed for member ${member.user_id}:`, err);
+        console.error(`[backfill] failed for member ${member.user_id}:`, err);
       });
     }
   } catch (error) {

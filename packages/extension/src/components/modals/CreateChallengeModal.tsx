@@ -89,6 +89,25 @@ export function CreateChallengeModal({
 
       const data = await response.json();
       console.log('Challenge created:', data);
+
+      // If challenge started in the past, trigger backfill on client side
+      if (data.needs_backfill) {
+        setError('Importing past efforts...');
+        try {
+          await fetch('https://strava-challenges-extension.vercel.app/api/challenges/backfill', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${jwt}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ challengeId: data.id }),
+          });
+        } catch (err) {
+          console.error('Backfill failed:', err);
+        }
+        setError(null);
+      }
+
       setInviteCode(data.invite_code);
       setShowSuccess(true);
     } catch (err) {

@@ -277,6 +277,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       return;
     }
 
+    const now = new Date();
+    const needsBackfill = new Date(starts_at) < now;
+
     res.status(201).json({
       id: challenge.id,
       invite_code,
@@ -284,23 +287,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       type,
       starts_at,
       ends_at,
+      slug,
+      needs_backfill: needsBackfill,
     });
-
-    const now = new Date();
-    if (new Date(starts_at) < now) {
-      const apiUrl = process.env.API_URL || 'https://strava-challenges-extension.vercel.app';
-      console.log('Triggering backfill endpoint for challenge', challenge.id);
-      fetch(`${apiUrl}/api/challenges/backfill`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ challengeId: challenge.id }),
-      }).catch((err: any) => {
-        console.error('Failed to trigger backfill endpoint:', err);
-      });
-    }
   } catch (error) {
     console.error('Failed to create challenge:', error);
     res.status(401).json({ error: 'Invalid JWT token' });
