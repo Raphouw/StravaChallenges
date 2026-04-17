@@ -71,7 +71,7 @@ export function JoinChallengeModal({
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
       <div className="w-80 bg-slate-900 border border-slate-700 rounded-lg p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Join Challenge</h3>
+          <h3 className="text-lg font-semibold text-white">Join Challenge</h3>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -81,14 +81,14 @@ export function JoinChallengeModal({
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+          <div className="mb-4 p-3 bg-red-900/30 border border-red-700/50 rounded text-red-400 text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-200 mb-1">
               Challenge Code
             </label>
             <input
@@ -98,9 +98,9 @@ export function JoinChallengeModal({
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               maxLength={6}
               placeholder="e.g., ABC123"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center font-mono text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase"
+              className="w-full px-3 py-2 border border-slate-600 bg-slate-800 rounded-md text-sm text-center font-mono text-lg tracking-widest text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase"
             />
-            <p className="text-xs text-gray-500 mt-2">Enter the 6-letter code shared by the challenge creator</p>
+            <p className="text-xs text-slate-400 mt-2">Enter the 6-letter code shared by the challenge creator</p>
           </div>
 
           <div className="flex gap-2 pt-4">

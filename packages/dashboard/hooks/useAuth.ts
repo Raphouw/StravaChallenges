@@ -16,47 +16,32 @@ export function useAuth() {
 
   useEffect(() => {
     const savedToken = localStorage.getItem('strava_jwt')
-    if (savedToken) {
-      setToken(savedToken)
-      fetchUser(savedToken)
-    } else {
-      setLoading(false)
-    }
-  }, [])
+    const savedUser = localStorage.getItem('strava_user')
 
-  const fetchUser = async (jwt: string) => {
-    try {
-      const response = await fetch('https://strava-challenges-extension.vercel.app/api/user/me', {
-        headers: {
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setUser(data)
-      } else {
+    if (savedToken && savedUser) {
+      try {
+        const userData = JSON.parse(savedUser)
+        setToken(savedToken)
+        setUser(userData)
+      } catch (e) {
+        console.error('Failed to parse saved user:', e)
         localStorage.removeItem('strava_jwt')
-        setToken(null)
+        localStorage.removeItem('strava_user')
       }
-    } catch (error) {
-      console.error('Failed to fetch user:', error)
-      localStorage.removeItem('strava_jwt')
-      setToken(null)
-    } finally {
-      setLoading(false)
     }
-  }
+    setLoading(false)
+  }, [])
 
   const login = (jwt: string, userData: AuthUser) => {
     localStorage.setItem('strava_jwt', jwt)
+    localStorage.setItem('strava_user', JSON.stringify(userData))
     setToken(jwt)
     setUser(userData)
   }
 
   const logout = () => {
     localStorage.removeItem('strava_jwt')
+    localStorage.removeItem('strava_user')
     setToken(null)
     setUser(null)
   }

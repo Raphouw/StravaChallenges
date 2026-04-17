@@ -4,11 +4,15 @@ import { useAuth } from '@/hooks/useAuth'
 import { Avatar } from './Avatar'
 
 export function Navbar() {
-  const { user, token, loading } = useAuth()
+  const { user, token, logout } = useAuth()
 
   const handleConnect = () => {
     const redirectUrl = `${window.location.origin}/auth-callback`
     window.location.href = `https://strava-challenges-extension.vercel.app/api/auth/strava?redirect_url=${encodeURIComponent(redirectUrl)}`
+  }
+
+  const handleDisconnect = () => {
+    logout()
   }
 
   return (
@@ -22,25 +26,29 @@ export function Navbar() {
           </div>
         </a>
         <div className="flex items-center gap-4">
-          {!loading && (
+          {user && token ? (
             <>
-              {user && token ? (
-                <div className="flex items-center gap-3">
-                  <Avatar src={user.profile_pic_url} name={user.name} size="sm" />
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-white">{user.name}</p>
-                    <p className="text-xs text-gray-400">Strava #{user.strava_id}</p>
-                  </div>
+              <div className="flex items-center gap-3">
+                <Avatar src={user.profile_pic_url} name={user.name} size="sm" />
+                <div className="text-right">
+                  <p className="text-sm font-medium text-white">{user.name}</p>
+                  <p className="text-xs text-gray-400">Strava #{user.strava_id}</p>
                 </div>
-              ) : (
-                <button
-                  onClick={handleConnect}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  🔗 Connect with Strava
-                </button>
-              )}
+              </div>
+              <button
+                onClick={handleDisconnect}
+                className="px-4 py-2 bg-red-900/50 hover:bg-red-900 text-red-400 text-sm font-medium rounded-lg transition-colors border border-red-800/50"
+              >
+                Disconnect
+              </button>
             </>
+          ) : (
+            <button
+              onClick={handleConnect}
+              className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              🔗 Connect with Strava
+            </button>
           )}
           <a
             href="https://chrome.google.com/webstore"

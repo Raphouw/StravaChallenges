@@ -146,9 +146,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
       if (segmentResponse.ok) {
         const segmentData = await segmentResponse.json() as any;
+        console.log('Strava segment raw:', JSON.stringify(segmentData));
         segmentName = segmentData.name || '';
         segmentDistance = (segmentData.distance || 0) / 1000;
         segmentElevation = segmentData.total_elevation_gain || 0;
+        console.log(`Segment: ${segmentName}, Distance: ${segmentDistance}km, Elevation: ${segmentElevation}m`);
       }
     } catch (error) {
       console.error('Failed to fetch segment details from Strava:', error);

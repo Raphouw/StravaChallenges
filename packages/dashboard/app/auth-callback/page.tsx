@@ -17,16 +17,15 @@ export default function AuthCallback() {
     const stravaId = searchParams.get('stravaId')
 
     if (token && userId && name && stravaId) {
-      login(token, {
+      const userData = {
         id: userId,
         name: decodeURIComponent(name),
         strava_id: stravaId,
         profile_pic_url: decodeURIComponent(profileUrl || ''),
-      })
-      router.push('/')
-    } else {
-      router.push('/')
+      }
+      login(token, userData)
     }
+    router.push('/')
   }, [searchParams, login, router])
 
   return (

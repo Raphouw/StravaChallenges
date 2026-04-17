@@ -38,21 +38,21 @@ export function ChallengeCard({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h4 className="font-semibold text-gray-900">
+              <h4 className="font-semibold text-white">
                 {challenge.name}
               </h4>
               {isOwner && (
-                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">
+                <span className="text-xs bg-orange-600/20 text-orange-300 px-2 py-0.5 rounded border border-orange-600/30">
                   Owner
                 </span>
               )}
             </div>
             <div className="mt-1 space-y-1">
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-gray-400">
                 {challenge.type} challenge • {daysRemaining > 0 ? `${daysRemaining}d left` : 'Ended'}
               </p>
               {userPosition && (
-                <p className={`text-xs font-semibold ${userPosition.rank === 1 ? 'text-orange-600' : 'text-gray-600'}`}>
+                <p className={`text-xs font-semibold ${userPosition.rank === 1 ? 'text-orange-400' : 'text-gray-400'}`}>
                   {userPosition.rank === 1
                     ? '🏆 You lead!'
                     : `📍 ${userPosition.rank}${['st', 'nd', 'rd'][userPosition.rank - 1] || 'th'}, ${userPosition.delta_from_leader}`}
