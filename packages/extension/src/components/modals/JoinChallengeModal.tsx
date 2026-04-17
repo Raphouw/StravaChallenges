@@ -68,8 +68,8 @@ export function JoinChallengeModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-80">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+      <div className="w-80 bg-slate-900 border border-slate-700 rounded-lg p-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Join Challenge</h3>
           <button
@@ -122,7 +122,7 @@ export function JoinChallengeModal({
             </Button>
           </div>
         </form>
-      </Card>
+      </div>
     </div>
   );
 }

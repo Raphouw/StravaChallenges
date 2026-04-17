@@ -6,6 +6,8 @@ import { Navbar } from '@/components/Navbar'
 import { Badge } from '@/components/Badge'
 import { Avatar } from '@/components/Avatar'
 import { EmptyState } from '@/components/EmptyState'
+import { CreateChallengeModal } from '@/components/CreateChallengeModal'
+import { useAuth } from '@/hooks/useAuth'
 
 interface Challenge {
   id: string
@@ -16,12 +18,14 @@ interface Challenge {
   invite_code: string
 }
 
-function ChallengeGrid() {
+function ChallengeGrid({ onCreateSuccess }: { onCreateSuccess: () => void }) {
   const searchParams = useSearchParams()
   const adminToken = searchParams.get('admin') || ''
+  const { token } = useAuth()
 
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [loading, setLoading] = useState(true)
+  const [joiningId, setJoiningId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('https://strava-challenges-extension.vercel.app/api/challenges/list-public', {
@@ -48,6 +52,31 @@ function ChallengeGrid() {
   const progressPercent = (endDate: string) => {
     const days = daysRemaining(endDate)
     return Math.max(0, Math.min(100, days * 5))
+  }
+
+  const handleJoin = async (challengeId: string, inviteCode: string) => {
+    if (!token) return
+    setJoiningId(challengeId)
+    try {
+      const response = await fetch('https://strava-challenges-extension.vercel.app/api/challenges/join', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code: inviteCode }),
+      })
+      if (response.ok) {
+        onCreateSuccess()
+      } else {
+        alert('Failed to join challenge')
+      }
+    } catch (error) {
+      console.error('Join failed:', error)
+      alert('Error joining challenge')
+    } finally {
+      setJoiningId(null)
+    }
   }
 
   if (loading) {
@@ -128,8 +157,25 @@ function ChallengeGrid() {
                 </div>
 
                 {/* CTA */}
-                <div className="inline-block px-3 py-1.5 bg-orange-600/10 border border-orange-500/30 text-orange-400 text-xs font-medium rounded group-hover:bg-orange-600/20 group-hover:border-orange-500/50 transition-all">
-                  View →
+                <div className="flex gap-2 items-center justify-between">
+                  <a
+                    href={getChallengeLink(challenge.slug)}
+                    className="flex-1 inline-block px-3 py-1.5 bg-orange-600/10 border border-orange-500/30 text-orange-400 text-xs font-medium rounded group-hover:bg-orange-600/20 group-hover:border-orange-500/50 transition-all text-center"
+                  >
+                    View →
+                  </a>
+                  {token && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handleJoin(challenge.id, challenge.invite_code)
+                      }}
+                      disabled={joiningId === challenge.id}
+                      className="px-3 py-1.5 bg-green-600/10 border border-green-500/30 text-green-400 text-xs font-medium rounded hover:bg-green-600/20 transition disabled:opacity-50"
+                    >
+                      {joiningId === challenge.id ? '...' : 'Join'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -141,6 +187,14 @@ function ChallengeGrid() {
 }
 
 export default function Home() {
+  const { token } = useAuth()
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const handleCreateSuccess = () => {
+    setRefreshKey((prev) => prev + 1)
+  }
+
   return (
     <div className="min-h-screen bg-black">
       <Navbar />
@@ -155,6 +209,18 @@ export default function Home() {
             <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-8">
               Create segment challenges, invite friends, and track every effort in real-time
             </p>
+
+            {/* Create Button */}
+            {token && (
+              <div className="mb-8">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition"
+                >
+                  + Create Challenge
+                </button>
+              </div>
+            )}
 
             {/* Feature pills */}
             <div className="flex flex-wrap justify-center gap-4 mb-12">
@@ -184,7 +250,7 @@ export default function Home() {
               </div>
             }
           >
-            <ChallengeGrid />
+            <ChallengeGrid key={refreshKey} onCreateSuccess={handleCreateSuccess} />
           </Suspense>
         </div>
       </section>
@@ -195,6 +261,19 @@ export default function Home() {
           <p>Made by cyclists, for cyclists. Powered by Strava.</p>
         </div>
       </footer>
+
+      {/* Create Challenge Modal */}
+      {token && (
+        <CreateChallengeModal
+          isOpen={showCreateModal}
+          jwt={token}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            handleCreateSuccess()
+            setShowCreateModal(false)
+          }}
+        />
+      )}
     </div>
   )
 }

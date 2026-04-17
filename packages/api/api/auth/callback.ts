@@ -24,13 +24,27 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  const { code, error, error_description } = req.query;
+  const { code, error, error_description, state } = req.query;
+
+  let redirectUrl = 'https://strava-challenges-extension.vercel.app/auth-success';
+
+  if (state && typeof state === 'string') {
+    try {
+      const stateData = JSON.parse(state);
+      if (stateData.redirect_url) {
+        redirectUrl = stateData.redirect_url;
+      }
+    } catch (e) {
+      console.error('Failed to parse state:', e);
+    }
+  }
 
   if (error) {
     const errorMessage = `${error}: ${error_description || 'Unknown error'}`;
-    res.redirect(
-      `https://strava-challenges-extension.vercel.app/auth-error?message=${encodeURIComponent(errorMessage)}`
-    );
+    const errorRedirectUrl = redirectUrl.includes('dashboard')
+      ? `${redirectUrl.split('?')[0]}/auth-error?message=${encodeURIComponent(errorMessage)}`
+      : `https://strava-challenges-extension.vercel.app/auth-error?message=${encodeURIComponent(errorMessage)}`;
+    res.redirect(errorRedirectUrl);
     return;
   }
 
@@ -112,9 +126,9 @@ export default async function handler(
 
     const jwtToken = generateJWT(userId, tokenData.athlete.id);
     const userName = `${tokenData.athlete.firstname} ${tokenData.athlete.lastname}`;
-    const redirectUrl = `https://strava-challenges-extension.vercel.app/auth-success?token=${encodeURIComponent(jwtToken)}&userId=${encodeURIComponent(userId)}&name=${encodeURIComponent(userName)}&profileUrl=${encodeURIComponent(tokenData.athlete.profile_medium)}&stravaId=${encodeURIComponent(tokenData.athlete.id.toString())}`;
+    const successUrl = `${redirectUrl}?token=${encodeURIComponent(jwtToken)}&userId=${encodeURIComponent(userId)}&name=${encodeURIComponent(userName)}&profileUrl=${encodeURIComponent(tokenData.athlete.profile_medium)}&stravaId=${encodeURIComponent(tokenData.athlete.id.toString())}`;
 
-    res.redirect(redirectUrl);
+    res.redirect(successUrl);
   } catch (error) {
     console.error('OAuth callback error:', error);
     res.status(500).json({ error: 'Internal server error' });
