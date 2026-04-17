@@ -12,21 +12,99 @@ interface CreateChallengeBody {
   ends_at: string;
 }
 
-async function triggerBackfill(challengeId: string, jwt: string): Promise<void> {
+async function runBackfill(
+  challengeId: string,
+  user: User,
+  startDate: string
+): Promise<void> {
   try {
-    await fetch(
-      `${process.env.API_URL || 'https://strava-challenges-extension.vercel.app'}/api/challenges/backfill`,
+    const userData = user as User;
+    let accessToken = userData.access_token;
+
+    if (userData.token_expires_at) {
+      const expiresAt = new Date(userData.token_expires_at).getTime();
+      if (expiresAt <= Date.now()) {
+        const decrypted = decryptToken(userData.refresh_token);
+        const newTokens = await refreshStravaToken(decrypted);
+        accessToken = encryptToken(newTokens.access_token);
+      }
+    }
+
+    const decryptedToken = decryptToken(accessToken);
+    const unixTimestamp = Math.floor(new Date(startDate).getTime() / 1000);
+
+    const activitiesResponse = await fetch(
+      `https://www.strava.com/api/v3/athlete/activities?after=${unixTimestamp}&per_page=50`,
       {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ challengeId }),
+        headers: { Authorization: `Bearer ${decryptedToken}` },
       }
     );
+
+    if (!activitiesResponse.ok) {
+      console.error('Failed to fetch activities for backfill');
+      return;
+    }
+
+    const activities = (await activitiesResponse.json()) as any[];
+
+    const { data: segments } = await supabase
+      .from('challenge_segments')
+      .select('strava_segment_id')
+      .eq('challenge_id', challengeId);
+
+    if (!segments) {
+      console.error('Failed to fetch segments for backfill');
+      return;
+    }
+
+    const segmentIds = new Set(segments.map(s => s.strava_segment_id));
+
+    for (const activity of activities) {
+      try {
+        const detailResponse = await fetch(
+          `https://www.strava.com/api/v3/activities/${activity.id}`,
+          {
+            headers: { Authorization: `Bearer ${decryptedToken}` },
+          }
+        );
+
+        if (!detailResponse.ok) continue;
+
+        const activityDetail = (await detailResponse.json()) as any;
+
+        if (activityDetail.segment_efforts && Array.isArray(activityDetail.segment_efforts)) {
+          for (const effort of activityDetail.segment_efforts) {
+            if (segmentIds.has(effort.segment.id)) {
+              const { error: insertError } = await supabase
+                .from('segment_efforts')
+                .insert({
+                  challenge_id: challengeId,
+                  user_id: userData.id,
+                  strava_effort_id: effort.id,
+                  elapsed_time: effort.elapsed_time,
+                  moving_time: effort.moving_time,
+                  distance: effort.distance,
+                  elevation_gain: effort.elevation_gain,
+                  start_date: effort.start_date,
+                  start_date_local: effort.start_date_local,
+                  pr_rank: effort.pr_rank,
+                  kom_rank: effort.kom_rank,
+                });
+
+              if (insertError && insertError.code !== '23505') {
+                console.error(`Failed to insert effort ${effort.id}:`, insertError);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error processing activity for backfill:', error);
+      }
+    }
+
+    console.log(`Backfill completed for challenge ${challengeId}`);
   } catch (error) {
-    console.error('Failed to trigger backfill:', error);
+    console.error('Backfill error:', error);
   }
 }
 
@@ -192,9 +270,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     console.log('now:', now.toISOString());
     console.log('should backfill:', new Date(starts_at) < now);
     if (new Date(starts_at) < now) {
-      console.log('Triggering backfill for challenge', challenge.id);
-      triggerBackfill(challenge.id, jwt).catch((err) => {
-        console.error('Backfill trigger failed:', err);
+      console.log('Running backfill for challenge', challenge.id);
+      await runBackfill(challenge.id, user as User, starts_at).catch((err: any) => {
+        console.error('Backfill failed:', err);
       });
     }
 
